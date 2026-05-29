@@ -53,21 +53,54 @@ app.use(express.static(__dirname, { dotfiles: 'deny' }));
 // A raiz sempre devolve o index — não depende do comportamento padrão do static.
 app.get('/', (_, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
-// ── Banco de dados em arquivos JSON ──────────────────────────
-
+// ── Persistência ─────────────────────────────────────────────
+// Os dados ficam em memória (acesso síncrono nas rotas). A gravação
+// vai para PostgreSQL quando há DATABASE_URL (Neon), senão para arquivos
+// JSON locais. Cada "tabela" é um documento { rows, nextId }.
 const TABLES = ['users', 'bets', 'deposits', 'withdrawals', 'favorites', 'notifications'];
 const db = {};
 
-function loadTable(name) {
-  const file = path.join(DB_DIR, name + '.json');
-  if (!fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify({ rows: [], nextId: 1 }));
-  return JSON.parse(fs.readFileSync(file, 'utf8'));
-}
-function saveTable(name) {
-  fs.writeFileSync(path.join(DB_DIR, name + '.json'), JSON.stringify(db[name], null, 2));
+const usePg = !!process.env.DATABASE_URL;
+let pool = null;
+if (usePg) {
+  const { Pool } = require('pg');
+  pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
 }
 
-TABLES.forEach(t => { db[t] = loadTable(t); });
+// Gravação no Postgres (sem bloquear a resposta). Evita escritas simultâneas
+// do mesmo documento enfileirando por tabela.
+const pgQueue = {};
+function pgSave(name) {
+  pgQueue[name] = (pgQueue[name] || Promise.resolve()).then(() =>
+    pool.query(
+      'INSERT INTO store(name, doc) VALUES($1, $2) ON CONFLICT(name) DO UPDATE SET doc = $2',
+      [name, JSON.stringify(db[name])]
+    )
+  ).catch(e => console.error('pgSave', name, e.message));
+}
+
+function saveTable(name) {
+  if (usePg) pgSave(name);
+  else fs.writeFileSync(path.join(DB_DIR, name + '.json'), JSON.stringify(db[name], null, 2));
+}
+
+async function loadAllTables() {
+  if (usePg) {
+    await pool.query('CREATE TABLE IF NOT EXISTS store (name TEXT PRIMARY KEY, doc JSONB NOT NULL)');
+    for (const t of TABLES) {
+      const r = await pool.query('SELECT doc FROM store WHERE name = $1', [t]);
+      db[t] = r.rows[0]?.doc || { rows: [], nextId: 1 };
+    }
+    console.log('  🗄  Dados em PostgreSQL (Neon)');
+  } else {
+    for (const t of TABLES) {
+      const file = path.join(DB_DIR, t + '.json');
+      if (!fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify({ rows: [], nextId: 1 }));
+      db[t] = JSON.parse(fs.readFileSync(file, 'utf8'));
+    }
+    console.log('  🗄  Dados em arquivos JSON locais (' + DB_DIR + ')');
+  }
+}
 
 function dbInsert(table, obj) {
   const row = { id: db[table].nextId++, created_at: new Date().toISOString(), ...obj };
@@ -200,6 +233,7 @@ const nudge = (v, r = 0.06) => v ? Math.max(1.01, +(v + (Math.random() - 0.5) * 
 
 // A cada 5s as partidas evoluem: relógio, odds, eventos e estatísticas.
 setInterval(() => {
+  if (!db.bets) return; // ainda carregando os dados
   liveGames.forEach(g => {
     if (g.sport === 'futebol' && g.minute && g.minute < 90) g.minute++;
 
@@ -626,6 +660,12 @@ app.post('/api/casino/play', auth, (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`\n  ⚡ ArenaBet → http://localhost:${PORT}\n`);
-});
+// Carrega os dados antes de aceitar requisições.
+loadAllTables()
+  .then(() => {
+    app.listen(PORT, () => console.log(`\n  ⚡ ArenaBet → http://localhost:${PORT}\n`));
+  })
+  .catch(e => {
+    console.error('Falha ao carregar dados:', e.message);
+    process.exit(1);
+  });

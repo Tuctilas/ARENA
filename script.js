@@ -1147,28 +1147,29 @@ async function changePassword() {
 //  VIEW: CASINO, PROMO, VIRTUAL, ESPORTS
 // ════════════════════════════════════════════
 const CASINO_GAMES = [
-  {icon:'🎰',name:'Gates of Olympus',  type:'Slot · Pragmatic',     rtp:'96.50%',live:false},
-  {icon:'🃏',name:'Lightning Roulette', type:'Roleta · Evolution',   rtp:'97.30%',live:true},
-  {icon:'🎲',name:'Blackjack VIP',      type:'Blackjack · Evolution',rtp:'99.28%',live:true},
-  {icon:'🐉',name:'Dragon Tiger',       type:'Cassino · Evolution',  rtp:'96.72%',live:true},
-  {icon:'🍀',name:'Sweet Bonanza',      type:'Slot · Pragmatic',     rtp:'96.51%',live:false},
-  {icon:'💎',name:'Crazy Time',         type:'Game Show · Evolution',rtp:'96.08%',live:true},
-  {icon:'🌙',name:'Starlight Princess', type:'Slot · Pragmatic',     rtp:'96.50%',live:false},
-  {icon:'🎯',name:'Aviator',            type:'Crash · Spribe',       rtp:'97.00%',live:false},
-  {icon:'🃏',name:'Baccarat Ao Vivo',   type:'Bacará · Evolution',   rtp:'98.76%',live:true},
-  {icon:'🎡',name:'Monopoly Live',      type:'Game Show · Evolution',rtp:'96.23%',live:true},
-  {icon:'🔥',name:'The Dog House',      type:'Slot · Pragmatic',     rtp:'96.51%',live:false},
-  {icon:'⚡',name:'Money Train 3',      type:'Slot · Relax Gaming',  rtp:'96.40%',live:false},
+  {icon:'🎯',name:'Aviator',            type:'Crash · Spribe',       rtp:'97.00%',live:false,game:'crash'},
+  {icon:'🃏',name:'Lightning Roulette', type:'Roleta · Evolution',   rtp:'97.30%',live:true, game:'roleta'},
+  {icon:'🎰',name:'Gates of Olympus',  type:'Slot · Pragmatic',     rtp:'96.50%',live:false,game:'slots'},
+  {icon:'🐉',name:'Dragon Tiger',       type:'Cassino · Evolution',  rtp:'96.72%',live:true, game:'double'},
+  {icon:'🍀',name:'Sweet Bonanza',      type:'Slot · Pragmatic',     rtp:'96.51%',live:false,game:'slots'},
+  {icon:'🎡',name:'Crazy Time',         type:'Game Show · Evolution',rtp:'96.08%',live:true, game:'roleta'},
+  {icon:'🌙',name:'Starlight Princess', type:'Slot · Pragmatic',     rtp:'96.50%',live:false,game:'slots'},
+  {icon:'🎲',name:'Blackjack VIP',      type:'Blackjack · Evolution',rtp:'99.28%',live:true, game:'double'},
+  {icon:'🃏',name:'Baccarat Ao Vivo',   type:'Bacará · Evolution',   rtp:'98.76%',live:true, game:'double'},
+  {icon:'🎡',name:'Monopoly Live',      type:'Game Show · Evolution',rtp:'96.23%',live:true, game:'roleta'},
+  {icon:'🔥',name:'The Dog House',      type:'Slot · Pragmatic',     rtp:'96.51%',live:false,game:'slots'},
+  {icon:'⚡',name:'Money Train 3',      type:'Slot · Relax Gaming',  rtp:'96.40%',live:false,game:'slots'},
 ];
 function renderCasino() {
-  document.getElementById('casinoGrid').innerHTML = CASINO_GAMES.map(g=>`
-    <div class="casino-card">
+  document.getElementById('casinoGrid').innerHTML = CASINO_GAMES.map((g,i)=>`
+    <div class="casino-card" onclick="openCasinoGame(${i})">
       <div class="casino-thumb">${g.icon}</div>
       <div class="casino-info">
         <div class="casino-name">${g.name}${g.live?'<span class="casino-live-badge">LIVE</span>':''}</div>
         <div class="casino-type">${g.type}</div>
         <div class="casino-rtp">RTP: ${g.rtp}</div>
       </div>
+      <div class="casino-play">▶ JOGAR</div>
     </div>`).join('');
 }
 
@@ -1783,3 +1784,214 @@ window.renderLiveCards = function() {
 };
 
 setTimeout(enhanceTeamLogos, 1000);
+
+// ════════════════════════════════════════════
+//  🎰 CASSINO — jogos com RNG no servidor
+// ════════════════════════════════════════════
+let casinoGame = null;
+let casinoBusy = false;
+
+function openCasinoGame(i) {
+  if (!currentUser) { openModal('loginModal'); return; }
+  casinoGame = CASINO_GAMES[i];
+  document.getElementById('casinoGameIcon').textContent  = casinoGame.icon;
+  document.getElementById('casinoGameTitle').textContent = casinoGame.name;
+  document.getElementById('casinoGameSub').textContent   = `${casinoGame.type} · RTP ${casinoGame.rtp}`;
+  buildCasinoUI(casinoGame.game);
+  openModal('casinoModal');
+}
+
+const casinoStake = () => Math.max(0, Number(document.getElementById('casinoStakeInput')?.value) || 0);
+
+function stakeControls(label) {
+  return `
+    <div class="casino-stake-row">
+      <button class="casino-chip" data-amt="5">5</button>
+      <button class="casino-chip" data-amt="10">10</button>
+      <button class="casino-chip" data-amt="25">25</button>
+      <button class="casino-chip" data-amt="50">50</button>
+      <input type="number" id="casinoStakeInput" class="casino-stake-input" value="10" min="1" />
+    </div>
+    <button class="btn-place-bet casino-go" id="casinoGoBtn"><span class="btn-glow-fx"></span>${label}</button>`;
+}
+
+function bindChips() {
+  document.querySelectorAll('.casino-chip').forEach(c => c.addEventListener('click', () => {
+    document.getElementById('casinoStakeInput').value = c.dataset.amt;
+  }));
+}
+
+function buildCasinoUI(type) {
+  const stage = document.getElementById('casinoStage');
+  const ctrl  = document.getElementById('casinoControls');
+
+  if (type === 'crash') {
+    stage.innerHTML = `<div class="crash-stage"><div class="crash-rocket" id="crashRocket">🚀</div><div class="crash-mult" id="crashMult">1.00x</div></div>`;
+    ctrl.innerHTML = `
+      <div class="casino-field"><label>RETIRAR AUTOMÁTICO EM</label>
+        <div class="crash-target-row">
+          <button class="crash-tbtn" data-t="1.5">1.5x</button>
+          <button class="crash-tbtn active" data-t="2">2.0x</button>
+          <button class="crash-tbtn" data-t="3">3.0x</button>
+          <button class="crash-tbtn" data-t="5">5.0x</button>
+          <input type="number" id="crashTarget" value="2.0" step="0.1" min="1.01" class="casino-stake-input" style="max-width:80px;">
+        </div>
+      </div>
+      ${stakeControls('🚀 LANÇAR')}`;
+    bindChips();
+    document.querySelectorAll('.crash-tbtn').forEach(b => b.addEventListener('click', () => {
+      document.querySelectorAll('.crash-tbtn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      document.getElementById('crashTarget').value = b.dataset.t;
+    }));
+    document.getElementById('casinoGoBtn').addEventListener('click', playCrash);
+
+  } else if (type === 'roleta') {
+    stage.innerHTML = `<div class="roleta-stage"><div class="roleta-wheel" id="roletaWheel">🎡</div><div class="roleta-result" id="roletaResult">Faça sua aposta</div></div>`;
+    ctrl.innerHTML = `
+      <div class="casino-field"><label>ESCOLHA</label>
+        <div class="roleta-picks" id="roletaPicks">
+          <button class="rpick active" data-pick="red" style="--c:#e63946">VERMELHO 2x</button>
+          <button class="rpick" data-pick="black" style="--c:#222">PRETO 2x</button>
+          <button class="rpick" data-pick="green" style="--c:#1a7a2e">VERDE 14x</button>
+        </div>
+      </div>
+      ${stakeControls('🎡 GIRAR')}`;
+    bindChips();
+    document.querySelectorAll('#roletaPicks .rpick').forEach(b => b.addEventListener('click', () => {
+      document.querySelectorAll('#roletaPicks .rpick').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+    }));
+    document.getElementById('casinoGoBtn').addEventListener('click', playRoleta);
+
+  } else if (type === 'slots') {
+    stage.innerHTML = `<div class="slots-stage"><div class="slot-reel" id="r0">🎰</div><div class="slot-reel" id="r1">🎰</div><div class="slot-reel" id="r2">🎰</div></div><div class="slots-msg" id="slotsMsg">Combine 3 e ganhe até 100x!</div>`;
+    ctrl.innerHTML = stakeControls('🎰 GIRAR');
+    bindChips();
+    document.getElementById('casinoGoBtn').addEventListener('click', playSlots);
+
+  } else if (type === 'double') {
+    stage.innerHTML = `<div class="double-stage"><div class="double-card" id="doubleCard">🂠</div><div class="double-result" id="doubleResult">Escolha um lado</div></div>`;
+    ctrl.innerHTML = `
+      <div class="casino-field"><label>APOSTE EM</label>
+        <div class="roleta-picks" id="doublePicks">
+          <button class="rpick active" data-pick="a" style="--c:#00D9FF">DRAGÃO 1.96x</button>
+          <button class="rpick" data-pick="b" style="--c:#FF2D55">TIGRE 1.96x</button>
+          <button class="rpick" data-pick="tie" style="--c:#FFD700">EMPATE 14x</button>
+        </div>
+      </div>
+      ${stakeControls('🐉 APOSTAR')}`;
+    bindChips();
+    document.querySelectorAll('#doublePicks .rpick').forEach(b => b.addEventListener('click', () => {
+      document.querySelectorAll('#doublePicks .rpick').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+    }));
+    document.getElementById('casinoGoBtn').addEventListener('click', playDouble);
+  }
+}
+
+async function casinoPlay(pick) {
+  if (casinoBusy) return null;
+  const stake = casinoStake();
+  if (stake < 1) { showToast('Valor mínimo R$ 1'); return null; }
+  if (currentUser && stake > currentUser.balance) { showToast('◈ Saldo insuficiente'); return null; }
+  casinoBusy = true;
+  document.getElementById('casinoGoBtn').disabled = true;
+  const res = await api.post('/api/casino/play', { game: casinoGame.game, stake, pick });
+  if (res.error) {
+    showToast('❌ ' + res.error);
+    casinoBusy = false;
+    document.getElementById('casinoGoBtn').disabled = false;
+    return null;
+  }
+  updateBalance(res.newBalance);
+  return { ...res, stake };
+}
+
+function casinoDone(res, winMsg, loseMsg) {
+  casinoBusy = false;
+  const btn = document.getElementById('casinoGoBtn');
+  if (btn) btn.disabled = false;
+  if (res.win) { playWinSound(); showToast(`🏆 ${winMsg} +${fmt(res.winnings)}`); }
+  else         { showToast(`💥 ${loseMsg}`); }
+}
+
+async function playCrash() {
+  const target = Math.max(1.01, Number(document.getElementById('crashTarget').value) || 2);
+  const res = await casinoPlay(target);
+  if (!res) return;
+  const crash  = res.detail.crash;
+  const multEl = document.getElementById('crashMult');
+  const rocket = document.getElementById('crashRocket');
+  rocket.className = 'crash-rocket flying';
+  let cur = 1.00;
+  const peak = res.win ? target : crash;
+  const timer = setInterval(() => {
+    cur = +(cur + Math.max(0.02, cur * 0.04)).toFixed(2);
+    if (cur >= peak) {
+      cur = peak;
+      multEl.textContent = cur.toFixed(2) + 'x';
+      clearInterval(timer);
+      if (res.win) { multEl.className = 'crash-mult win'; rocket.textContent = '💰'; }
+      else         { multEl.className = 'crash-mult bust'; rocket.textContent = '💥'; rocket.className = 'crash-rocket'; }
+      setTimeout(() => { multEl.className = 'crash-mult'; rocket.textContent = '🚀'; rocket.className = 'crash-rocket'; }, 2500);
+      casinoDone(res, `Retirou em ${target.toFixed(2)}x!`, `Explodiu em ${crash.toFixed(2)}x`);
+    } else {
+      multEl.textContent = cur.toFixed(2) + 'x';
+    }
+  }, 60);
+}
+
+async function playRoleta() {
+  const pick = document.querySelector('#roletaPicks .rpick.active').dataset.pick;
+  const res = await casinoPlay(pick);
+  if (!res) return;
+  const wheel = document.getElementById('roletaWheel');
+  const out   = document.getElementById('roletaResult');
+  wheel.className = 'roleta-wheel spinning';
+  out.textContent = 'Girando...';
+  setTimeout(() => {
+    wheel.className = 'roleta-wheel';
+    const { number, color } = res.detail;
+    const cl = color === 'red' ? '#e63946' : color === 'green' ? '#1a7a2e' : '#888';
+    out.innerHTML = `<span style="color:${cl};font-weight:800">${number} ${color.toUpperCase()}</span>`;
+    casinoDone(res, `Caiu ${color}!`, `Caiu ${number} ${color}`);
+  }, 1400);
+}
+
+async function playSlots() {
+  const res = await casinoPlay(null);
+  if (!res) return;
+  const reels = ['r0','r1','r2'].map(id => document.getElementById(id));
+  const msg   = document.getElementById('slotsMsg');
+  const sym   = ['🍒','🍋','🔔','⭐','💎','7️⃣'];
+  reels.forEach(r => r.classList.add('spinning'));
+  msg.textContent = 'Girando...';
+  const spinners = reels.map(r => setInterval(() => { r.textContent = sym[Math.floor(Math.random() * sym.length)]; }, 80));
+  reels.forEach((r, i) => setTimeout(() => {
+    clearInterval(spinners[i]);
+    r.classList.remove('spinning');
+    r.textContent = res.detail.reels[i];
+    if (i === 2) {
+      msg.textContent = res.win ? `🎉 ${res.multiplier}x!` : 'Tente de novo!';
+      casinoDone(res, `${res.multiplier}x!`, 'Sem combinação');
+    }
+  }, 700 + i * 500));
+}
+
+async function playDouble() {
+  const pick = document.querySelector('#doublePicks .rpick.active').dataset.pick;
+  const res = await casinoPlay(pick);
+  if (!res) return;
+  const card = document.getElementById('doubleCard');
+  const out  = document.getElementById('doubleResult');
+  card.className = 'double-card flip';
+  out.textContent = 'Virando...';
+  setTimeout(() => {
+    card.className = 'double-card';
+    const map = { a:'🐉 DRAGÃO', b:'🐯 TIGRE', tie:'🟰 EMPATE' };
+    card.textContent = res.detail.result === 'a' ? '🐉' : res.detail.result === 'b' ? '🐯' : '🟰';
+    out.textContent = map[res.detail.result];
+    casinoDone(res, `${map[res.detail.result]}!`, `Saiu ${map[res.detail.result]}`);
+  }, 900);
+}

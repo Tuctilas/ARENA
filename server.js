@@ -535,6 +535,72 @@ app.get('/api/vip/info', auth, (req, res) => {
   });
 });
 
+// ── Cassino (RNG no servidor — resultado decidido aqui, não dá pra trapacear) ──
+const rng = () => crypto.randomBytes(4).readUInt32BE(0) / 0xFFFFFFFF; // 0..1 uniforme
+
+app.post('/api/casino/play', auth, (req, res) => {
+  const game  = clean(req.body.game, 20);
+  const stake = Number(req.body.stake);
+  const pick  = req.body.pick;
+
+  if (!Number.isFinite(stake) || stake < 1 || stake > 100000) return res.status(400).json({ error: 'Valor inválido' });
+  const user = dbFindOne('users', u => u.id === req.user.id);
+  if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
+  if (user.balance < stake) return res.status(400).json({ error: 'Saldo insuficiente' });
+
+  // Debita a aposta antes de resolver.
+  dbUpdate('users', u => u.id === user.id, {
+    balance:    +(user.balance - stake).toFixed(2),
+    vip_points: (user.vip_points || 0) + Math.floor(stake),
+  });
+
+  let multiplier = 0, detail = {};
+
+  if (game === 'crash') {
+    const target = Math.max(1.01, Math.min(50, Number(pick) || 2));
+    const crash  = Math.max(1, +(0.97 / (1 - rng())).toFixed(2)); // margem da casa ~3%
+    if (target <= crash) multiplier = target;
+    detail = { crash, target };
+
+  } else if (game === 'roleta') {
+    const n = Math.floor(rng() * 37); // 0..36
+    const reds = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
+    const color = n === 0 ? 'green' : reds.includes(n) ? 'red' : 'black';
+    detail = { number: n, color };
+    if (pick === 'red' || pick === 'black') multiplier = pick === color ? 2 : 0;
+    else if (pick === 'green')               multiplier = color === 'green' ? 14 : 0;
+    else                                     multiplier = parseInt(pick) === n ? 36 : 0;
+
+  } else if (game === 'slots') {
+    const sym = ['🍒','🍋','🔔','⭐','💎','7️⃣'];
+    const reels = [0,0,0].map(() => sym[Math.floor(rng() * sym.length)]);
+    detail = { reels };
+    if (reels[0] === reels[1] && reels[1] === reels[2]) {
+      multiplier = { '🍒':5, '🍋':8, '🔔':12, '⭐':20, '💎':50, '7️⃣':100 }[reels[0]];
+    } else if (reels[0] === reels[1] || reels[1] === reels[2] || reels[0] === reels[2]) {
+      multiplier = 1.5;
+    }
+
+  } else if (game === 'double') {
+    const r = rng();
+    const result = r < 0.49 ? 'a' : r < 0.98 ? 'b' : 'tie';
+    detail = { result };
+    multiplier = pick === result ? (result === 'tie' ? 14 : 1.96) : 0;
+
+  } else {
+    return res.status(400).json({ error: 'Jogo inválido' });
+  }
+
+  const winnings = +(stake * multiplier).toFixed(2);
+  if (winnings > 0) creditBalance(req.user.id, winnings);
+
+  res.json({
+    win: winnings > 0,
+    multiplier, winnings, detail,
+    newBalance: dbFindOne('users', u => u.id === req.user.id).balance,
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`\n  ⚡ ArenaBet → http://localhost:${PORT}\n`);
 });

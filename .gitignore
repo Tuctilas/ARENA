@@ -1,6 +1,27 @@
+# Dependências
 node_modules/
+
+# Banco de dados (contém e-mails, CPFs e hashes de senha — NUNCA subir)
 data/
-*.log
+*.db
+*.sqlite
+
+# Segredos e variáveis de ambiente
 .env
+.env.*
+*.pem
+*.key
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema operacional
 .DS_Store
-arenabet.db
+Thumbs.db
+desktop.ini
+
+# Editores
+.vscode/
+.idea/
+*.swp

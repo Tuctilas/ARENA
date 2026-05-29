@@ -278,10 +278,10 @@ app.post('/api/auth/register', async (req, res) => {
     const hash = await bcrypt.hash(password, 10);
     const user = dbInsert('users', {
       name, last_name: lastName, email, cpf,
-      password: hash, balance: 1000, vip_level: 1, vip_points: 0,
+      password: hash, balance: 50, vip_level: 1, vip_points: 0,
     });
     const token = jwt.sign({ id: user.id }, SECRET, { expiresIn: '7d' });
-    notify(user.id, '🎉 Bem-vindo à ArenaBet!', `Olá ${name}! Bônus de R$ 1.000 já disponível.`, 'info');
+    notify(user.id, '🎉 Bem-vindo à ArenaBet!', `Olá ${name}! Bônus de R$ 50,00 já disponível.`, 'info');
     res.json({ token, user: publicUser(user) });
   } catch (e) {
     console.error('register:', e);

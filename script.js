@@ -1146,19 +1146,20 @@ async function changePassword() {
 // ════════════════════════════════════════════
 //  VIEW: CASINO, PROMO, VIRTUAL, ESPORTS
 // ════════════════════════════════════════════
+// RTPs exibidos batem com a margem atual da casa (fase inicial agressiva).
 const CASINO_GAMES = [
-  {icon:'🎯',name:'Aviator',            type:'Crash · Spribe',       rtp:'97.00%',live:false,game:'crash'},
-  {icon:'🃏',name:'Lightning Roulette', type:'Roleta · Evolution',   rtp:'97.30%',live:true, game:'roleta'},
-  {icon:'🎰',name:'Gates of Olympus',  type:'Slot · Pragmatic',     rtp:'96.50%',live:false,game:'slots'},
-  {icon:'🐉',name:'Dragon Tiger',       type:'Cassino · Evolution',  rtp:'96.72%',live:true, game:'double'},
-  {icon:'🍀',name:'Sweet Bonanza',      type:'Slot · Pragmatic',     rtp:'96.51%',live:false,game:'slots'},
-  {icon:'🎡',name:'Crazy Time',         type:'Game Show · Evolution',rtp:'96.08%',live:true, game:'roleta'},
-  {icon:'🌙',name:'Starlight Princess', type:'Slot · Pragmatic',     rtp:'96.50%',live:false,game:'slots'},
-  {icon:'🎲',name:'Blackjack VIP',      type:'Blackjack · Evolution',rtp:'99.28%',live:true, game:'double'},
-  {icon:'🃏',name:'Baccarat Ao Vivo',   type:'Bacará · Evolution',   rtp:'98.76%',live:true, game:'double'},
-  {icon:'🎡',name:'Monopoly Live',      type:'Game Show · Evolution',rtp:'96.23%',live:true, game:'roleta'},
-  {icon:'🔥',name:'The Dog House',      type:'Slot · Pragmatic',     rtp:'96.51%',live:false,game:'slots'},
-  {icon:'⚡',name:'Money Train 3',      type:'Slot · Relax Gaming',  rtp:'96.40%',live:false,game:'slots'},
+  {icon:'🎯',name:'Aviator',            type:'Crash · Spribe',       rtp:'55%',live:false,game:'crash'},
+  {icon:'🃏',name:'Lightning Roulette', type:'Roleta · Evolution',   rtp:'56%',live:true, game:'roleta'},
+  {icon:'🎰',name:'Gates of Olympus',  type:'Slot · Pragmatic',     rtp:'68%',live:false,game:'slots'},
+  {icon:'🐉',name:'Dragon Tiger',       type:'Cassino · Evolution',  rtp:'63%',live:true, game:'double'},
+  {icon:'🍀',name:'Sweet Bonanza',      type:'Slot · Pragmatic',     rtp:'68%',live:false,game:'slots'},
+  {icon:'🎡',name:'Crazy Time',         type:'Game Show · Evolution',rtp:'56%',live:true, game:'roleta'},
+  {icon:'🌙',name:'Starlight Princess', type:'Slot · Pragmatic',     rtp:'68%',live:false,game:'slots'},
+  {icon:'🎲',name:'Blackjack VIP',      type:'Blackjack · Evolution',rtp:'63%',live:true, game:'double'},
+  {icon:'🃏',name:'Baccarat Ao Vivo',   type:'Bacará · Evolution',   rtp:'63%',live:true, game:'double'},
+  {icon:'🎡',name:'Monopoly Live',      type:'Game Show · Evolution',rtp:'56%',live:true, game:'roleta'},
+  {icon:'🔥',name:'The Dog House',      type:'Slot · Pragmatic',     rtp:'68%',live:false,game:'slots'},
+  {icon:'⚡',name:'Money Train 3',      type:'Slot · Relax Gaming',  rtp:'68%',live:false,game:'slots'},
 ];
 function renderCasino() {
   document.getElementById('casinoGrid').innerHTML = CASINO_GAMES.map((g,i)=>`

@@ -9,8 +9,10 @@ data/
 # Segredos e variáveis de ambiente
 .env
 .env.*
+!.env.example
 *.pem
 *.key
+.jwt_secret
 
 # Logs
 *.log

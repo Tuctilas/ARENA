@@ -1,4 +1,5 @@
 // ArenaBet – API + motor de odds ao vivo
+require('dotenv').config();
 const express = require('express');
 const cors    = require('cors');
 const bcrypt  = require('bcryptjs');
@@ -9,14 +10,27 @@ const path    = require('path');
 
 const app    = express();
 const PORT   = process.env.PORT || 3000;
-const DB_DIR = path.join(__dirname, 'data');
+// Use uma pasta persistente (volume) via DATA_DIR; senão, ./data local.
+const DB_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR, { recursive: true });
 
-// O segredo precisa vir do ambiente em produção. Sem ele, geramos um
-// aleatório por boot — seguro, mas invalida os tokens a cada reinício.
-const SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
-if (!process.env.JWT_SECRET) {
-  console.warn('  ⚠  JWT_SECRET não definido — usando segredo temporário. Defina a variável em produção.');
+// Segredo JWT. Em produção vem de process.env.JWT_SECRET.
+// Sem a variável, geramos um segredo e o guardamos em disco — assim os
+// tokens continuam válidos após reinícios (não muda a cada boot).
+function resolveSecret() {
+  if (process.env.JWT_SECRET) return process.env.JWT_SECRET;
+  const file = path.join(DB_DIR, '.jwt_secret');
+  try {
+    if (fs.existsSync(file)) return fs.readFileSync(file, 'utf8').trim();
+    const s = crypto.randomBytes(48).toString('hex');
+    fs.writeFileSync(file, s, { mode: 0o600 });
+    console.warn('  ⚠  JWT_SECRET não definido — gerado e guardado em', file, '(defina a variável em produção).');
+    return s;
+  } catch {
+    return crypto.randomBytes(48).toString('hex');
+  }
 }
+const SECRET = resolveSecret();
 
 // Margem da casa (0 = jogo justo · 1 = quase impossível ganhar).
 // Fase inicial agressiva = 0.45. Para voltar ao normal, defina a variável
@@ -40,7 +54,6 @@ app.use(express.static(__dirname, { dotfiles: 'deny' }));
 app.get('/', (_, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
 // ── Banco de dados em arquivos JSON ──────────────────────────
-if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR);
 
 const TABLES = ['users', 'bets', 'deposits', 'withdrawals', 'favorites', 'notifications'];
 const db = {};

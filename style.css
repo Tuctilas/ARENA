@@ -88,8 +88,8 @@ input  { font-family: inherit; }
 }
 .header-inner {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 20px; height: 60px;
-  max-width: 1600px; margin: 0 auto;
+  padding: 0 24px; height: 60px;
+  width: 100%; margin: 0 auto;
 }
 .header-line {
   height: 1px;
@@ -206,10 +206,20 @@ input  { font-family: inherit; }
 ═══════════════════════════════════════════ */
 .main-layout {
   display: grid;
-  grid-template-columns: 220px 1fr 300px;
+  grid-template-columns: 240px minmax(0, 1fr) 320px;
   position: relative; z-index: 10;
-  max-width: 1600px; margin: 0 auto;
+  width: 100%; margin: 0 auto;
   min-height: calc(100vh - 98px);
+}
+/* Telas grandes: ocupa o espaço, alargando colunas laterais e centro. */
+@media (min-width: 1700px) {
+  .main-layout  { grid-template-columns: 300px minmax(0, 1fr) 380px; }
+  .header-inner { max-width: 100%; padding: 0 40px; }
+  .hero-content { max-width: 820px; }
+}
+@media (min-width: 2400px) {
+  .main-layout  { grid-template-columns: 360px minmax(0, 1fr) 440px; }
+  .main-content { font-size: 15px; }
 }
 
 /* ═══════════════════════════════════════════

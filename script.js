@@ -1287,26 +1287,37 @@ document.querySelectorAll('.crypto-btn').forEach(btn => btn.addEventListener('cl
   btn.classList.add('active');
 }));
 
-// Depósito — um handler para todos os métodos.
+// Depósito — tenta o pagamento real (DebitoPay); se não estiver configurado, usa o simulado.
 ['mpesa','emola','mkesh','card','crypto','bank'].forEach(m => {
   const btn = document.getElementById(m + 'ConfirmBtn');
   if (!btn) return;
   btn.addEventListener('click', async () => {
     if (!currentUser) { openModal('loginModal'); return; }
-    const inp = document.getElementById(m + 'Amount');
-    const val = inp ? parseFloat(inp.value) || 0 : 100;
+    const val   = parseFloat(document.getElementById(m + 'Amount')?.value) || 0;
     if (val < 50) { showToast('Valor mínimo: 50 MT'); return; }
-
     const mobile = ['mpesa','emola','mkesh'].includes(m);
-    if (mobile) showToast('📲 Confirme o pagamento no seu telemóvel...');
+    const phone  = document.getElementById(m + 'Phone')?.value || '';
 
-    const res = await api.post('/api/user/deposit', { method: m, amount: val });
-    if (res.error) { showToast('❌ ' + res.error); return; }
-    updateBalance(res.newBalance);
-    setTimeout(() => {
-      showToast(`✅ Depósito de ${fmt(val)} confirmado!`);
+    btn.disabled = true;
+    if (mobile) showToast('Confirme o pagamento no seu telemóvel...');
+
+    // 1) Tenta o gateway real.
+    const pay = await api.post('/api/payments/create', { method: m, amount: val, phone });
+    btn.disabled = false;
+
+    if (pay && !pay.error) {
+      if (pay.status === 'redirect' && pay.checkoutUrl) { window.location.href = pay.checkoutUrl; return; }
+      if (pay.status === 'completed') { updateBalance(pay.newBalance); showToast(`Depósito de ${fmt(val)} confirmado!`); closeModal('depositModal'); return; }
+      showToast(pay.message || 'Pagamento iniciado. Aguardando confirmação...');
       closeModal('depositModal');
-    }, mobile ? 1200 : 0);
+      return;
+    }
+
+    // 2) Gateway não configurado (503) → modo simulado (demo).
+    const sim = await api.post('/api/user/deposit', { method: m, amount: val });
+    if (sim.error) { showToast('❌ ' + sim.error); return; }
+    updateBalance(sim.newBalance);
+    setTimeout(() => { showToast(`Depósito de ${fmt(val)} confirmado!`); closeModal('depositModal'); }, mobile ? 1000 : 0);
   });
 });
 

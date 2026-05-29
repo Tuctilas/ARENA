@@ -38,7 +38,20 @@ const SECRET = resolveSecret();
 const HOUSE_EDGE = Math.min(0.9, Math.max(0, Number(process.env.HOUSE_EDGE ?? 0.45)));
 
 app.use(cors({ origin: process.env.CORS_ORIGIN || true }));
-app.use(express.json({ limit: '32kb' }));
+// Guarda o corpo bruto para validar a assinatura do webhook da DebitoPay.
+app.use(express.json({ limit: '32kb', verify: (req, _res, buf) => { req.rawBody = buf; } }));
+
+// ── Configuração DebitoPay (tudo via variáveis de ambiente) ──
+const DEBITOPAY = {
+  baseUrl:    (process.env.DEBITOPAY_BASE_URL || '').replace(/\/$/, ''),
+  key:        process.env.DEBITOPAY_KEY || '',
+  merchantId: process.env.DEBITOPAY_MERCHANT_ID || '',
+  walletCode: process.env.DEBITOPAY_WALLET_CODE || '',
+  webhookSecret: process.env.DEBITOPAY_WEBHOOK_SECRET || '',
+  authHeader: process.env.DEBITOPAY_AUTH_HEADER || 'Authorization', // ou 'X-API-Key'
+  authScheme: process.env.DEBITOPAY_AUTH_SCHEME ?? 'Bearer',        // '' se a chave for enviada pura
+};
+const debitopayReady = !!(DEBITOPAY.baseUrl && DEBITOPAY.key && DEBITOPAY.merchantId && DEBITOPAY.walletCode);
 
 // Só expõe os arquivos públicos. Sem isso, /data/*.json (senhas, e-mails,
 // CPFs) e o próprio server.js ficariam acessíveis pela web.
@@ -658,6 +671,114 @@ app.post('/api/casino/play', auth, (req, res) => {
     multiplier, winnings, detail,
     newBalance: dbFindOne('users', u => u.id === req.user.id).balance,
   });
+});
+
+// ── Pagamentos reais via DebitoPay ───────────────────────────
+// Fluxo: POST /payment-orchestrator (server-to-server). Mobile money
+// (M-Pesa síncrono / e-Mola, mKesh assíncrono) ou cartão (checkout_url).
+// O saldo só é creditado quando o pagamento é CONFIRMADO (resposta síncrona
+// de sucesso ou webhook payment.completed) — nunca antes.
+
+function debitopayHeaders() {
+  const h = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+  h[DEBITOPAY.authHeader] = DEBITOPAY.authScheme ? `${DEBITOPAY.authScheme} ${DEBITOPAY.key}` : DEBITOPAY.key;
+  return h;
+}
+
+// Credita um depósito uma única vez (idempotente pela referência).
+function settleDeposit(reference, fallbackAmount) {
+  const dep = dbFindOne('deposits', d => d.reference === reference);
+  if (!dep) return null;
+  if (dep.status === 'completed') return dep; // já creditado — evita duplicar
+  dbUpdate('deposits', d => d.id === dep.id, { status: 'completed' });
+  creditBalance(dep.user_id, dep.amount || fallbackAmount || 0, Math.floor((dep.amount || 0) / 10));
+  addNotification(dep.user_id, '✅ Depósito Confirmado', `${(dep.amount || 0).toFixed(2)} MT via ${dep.method}`, 'win');
+  updateVipLevel(dep.user_id);
+  return dep;
+}
+
+app.post('/api/payments/create', auth, async (req, res) => {
+  if (!debitopayReady) return res.status(503).json({ error: 'Pagamentos ainda não configurados' });
+
+  const method = clean(req.body.method, 20);      // mpesa | emola | mkesh | card | payfast
+  const amount = Number(req.body.amount);
+  const phone  = clean(req.body.phone, 20);
+  if (!Number.isFinite(amount) || amount < 50) return res.status(400).json({ error: 'Valor mínimo 50 MT' });
+
+  const isMobile = ['mpesa', 'emola', 'mkesh'].includes(method);
+  if (isMobile && !phone) return res.status(400).json({ error: 'Número de telemóvel obrigatório' });
+
+  // Referência única para casar o webhook com este depósito.
+  const reference = 'AB-' + req.user.id + '-' + Date.now() + '-' + crypto.randomBytes(3).toString('hex');
+  const base = process.env.PUBLIC_URL || 'https://web-production-ec637.up.railway.app';
+
+  const payload = {
+    merchant_id:    DEBITOPAY.merchantId,
+    wallet_code:    DEBITOPAY.walletCode,
+    payment_method: method,
+    amount,
+    reference,
+    callback_url:   `${base}/api/payments/webhook`,
+    ...(isMobile ? { phone } : { return_url: `${base}/?deposito=ok` }),
+  };
+
+  // Registra o depósito como pendente antes de chamar o gateway.
+  dbInsert('deposits', { user_id: req.user.id, method, amount, status: 'pending', reference });
+
+  try {
+    const r = await fetch(`${DEBITOPAY.baseUrl}/payment-orchestrator`, {
+      method: 'POST', headers: debitopayHeaders(), body: JSON.stringify(payload),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      dbUpdate('deposits', d => d.reference === reference, { status: 'failed' });
+      return res.status(502).json({ error: data.message || 'Falha no gateway', detail: data });
+    }
+
+    const status      = (data.status || '').toLowerCase();
+    const checkoutUrl = data.checkout_url || data.checkoutUrl || data.redirect_url;
+
+    // M-Pesa pode confirmar de forma síncrona.
+    if (status === 'success' || status === 'completed') {
+      settleDeposit(reference, amount);
+      const u = dbFindOne('users', x => x.id === req.user.id);
+      return res.json({ status: 'completed', newBalance: u.balance, reference });
+    }
+    // Cartões: devolve a URL do Hosted Checkout para redirecionar.
+    if (checkoutUrl) return res.json({ status: 'redirect', checkoutUrl, reference });
+    // e-Mola / mKesh: pendente — confirma depois via webhook.
+    return res.json({ status: 'pending', reference, message: 'Confirme o pagamento no seu telemóvel.' });
+
+  } catch (e) {
+    dbUpdate('deposits', d => d.reference === reference, { status: 'failed' });
+    console.error('debitopay create:', e.message);
+    return res.status(502).json({ error: 'Não foi possível contactar o gateway' });
+  }
+});
+
+// Webhook da DebitoPay: payment.completed / payment.failed.
+app.post('/api/payments/webhook', (req, res) => {
+  // Valida a assinatura (HMAC-SHA256 do corpo bruto com o webhook secret).
+  if (DEBITOPAY.webhookSecret) {
+    const sigHeader = req.headers['x-debitopay-signature'] || req.headers['x-webhook-signature'] || '';
+    const expected  = crypto.createHmac('sha256', DEBITOPAY.webhookSecret)
+      .update(req.rawBody || Buffer.from('')).digest('hex');
+    const a = Buffer.from(String(sigHeader)); const b = Buffer.from(expected);
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+      return res.status(401).json({ error: 'Assinatura inválida' });
+    }
+  }
+
+  const evt  = req.body || {};
+  const type = evt.event || evt.type;
+  const reference = evt.reference || evt.data?.reference;
+  const amount    = Number(evt.amount || evt.data?.amount) || undefined;
+
+  if (type === 'payment.completed' && reference) settleDeposit(reference, amount);
+  else if (type === 'payment.failed' && reference) {
+    dbUpdate('deposits', d => d.reference === reference && d.status === 'pending', { status: 'failed' });
+  }
+  res.json({ received: true });
 });
 
 // Carrega os dados antes de aceitar requisições.

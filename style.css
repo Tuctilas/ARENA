@@ -1370,3 +1370,18 @@ input  { font-family: inherit; }
   backdrop-filter: blur(10px);
 }
 .mute-btn:hover { border-color: var(--neon-blue); box-shadow: 0 0 14px rgba(0,217,255,.3); }
+
+/* Estado vazio dos filtros */
+.empty-filter {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 36px 20px;
+  border: 1px dashed rgba(0,217,255,.2);
+  border-radius: var(--radius-lg);
+  color: rgba(234,234,234,.55);
+  font-size: 14px;
+  line-height: 1.7;
+  background: rgba(0,217,255,.03);
+}
+.empty-filter strong { color: var(--neon-blue); }
+.empty-filter span { font-size: 12px; color: rgba(234,234,234,.35); }

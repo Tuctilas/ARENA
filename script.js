@@ -61,7 +61,32 @@ let currentMarket  = 'principal';
 let liveGamesData  = [];
 let upcomingData   = [];
 let liveFilterSport = 'all';
+let homeSport   = 'all';   // filtro de esporte na home (barra lateral)
+let homeLeague  = 'all';   // filtro de liga na home (barra lateral)
 let betHistoryFilter = 'all';
+
+// Liga (chave da barra lateral) → trecho do nome usado nos dados
+const LEAGUE_MATCH = {
+  brasileirao: 'brasileir', libertadores: 'libertadores', champions: 'champions',
+  premier: 'premier', laliga: 'la liga', seriea: 'serie a',
+  bundesliga: 'bundesliga', copabrasil: 'copa do brasil',
+};
+const SPORT_LABELS = {
+  futebol:'Futebol', basquete:'Basquete', tenis:'Tênis', volei:'Vôlei',
+  mma:'MMA/Lutas', americano:'Futebol Americano', esports:'E-Sports', formula1:'Fórmula 1',
+};
+
+// Aplica os filtros da barra lateral sobre uma lista de jogos.
+function applyHomeFilters(list) {
+  return list.filter(g => {
+    if (homeSport !== 'all' && g.sport !== homeSport) return false;
+    if (homeLeague !== 'all') {
+      const needle = LEAGUE_MATCH[homeLeague];
+      if (needle && !g.league.toLowerCase().includes(needle)) return false;
+    }
+    return true;
+  });
+}
 let pixTimerInterval = null;
 let pwaInstallPrompt = null;
 
@@ -367,8 +392,17 @@ function renderAllCards() {
 // ════════════════════════════════════════════
 function renderLiveCards() {
   if (!liveGamesData.length) return;
-  const toShow = liveGamesData.slice(0, 4);
-  document.getElementById('liveCards').innerHTML = toShow.map(g => {
+  const el = document.getElementById('liveCards');
+  const filtered = applyHomeFilters(liveGamesData);
+
+  if (!filtered.length) {
+    const nome = homeSport !== 'all' ? (SPORT_LABELS[homeSport] || homeSport) : 'esta seleção';
+    el.innerHTML = `<div class="empty-filter">⚡ Nenhum evento ao vivo de <strong>${nome}</strong> no momento.<br><span>Veja os próximos jogos abaixo ou escolha outro esporte.</span></div>`;
+    return;
+  }
+
+  const toShow = filtered.slice(0, 6);
+  el.innerHTML = toShow.map(g => {
     const oddVals = [g.odds.h, g.odds.d, g.odds.a].filter(Boolean);
     const book    = oddVals.reduce((s,o)=>s+1/o, 0);
     const ret     = (100/book).toFixed(1);
@@ -409,8 +443,16 @@ function renderLiveCards() {
 // ════════════════════════════════════════════
 function renderMatchTable(filter='all') {
   if (!upcomingData.length) return;
-  const games = filter==='all' ? upcomingData : upcomingData.filter(g=>g.filter===filter);
-  document.getElementById('matchTable').innerHTML = games.map(g => {
+  let games = filter==='all' ? upcomingData : upcomingData.filter(g=>g.filter===filter);
+  games = applyHomeFilters(games);
+  const el = document.getElementById('matchTable');
+
+  if (!games.length) {
+    el.innerHTML = `<div class="empty-filter">📅 Nenhum jogo agendado para este filtro.</div>`;
+    return;
+  }
+
+  el.innerHTML = games.map(g => {
     const od  = [g.odds.h, g.odds.d, g.odds.a].filter(Boolean);
     const bk  = od.reduce((s,o)=>s+1/o, 0);
     const ret = (100/bk).toFixed(1);
@@ -804,17 +846,35 @@ document.getElementById('filterTabs').addEventListener('click', e => {
   renderMatchTable(currentFilter);
 });
 
-// Sidebar
+// Barra lateral – filtro por esporte
 document.querySelectorAll('.sport-item').forEach(item => item.addEventListener('click', () => {
-  document.querySelectorAll('.sport-item').forEach(i=>i.classList.remove('active'));
+  document.querySelectorAll('.sport-item').forEach(i => i.classList.remove('active'));
   item.classList.add('active');
+  homeSport  = item.dataset.sport || 'all';
+  homeLeague = 'all';   // limpa filtro de liga ao trocar de esporte
+  document.querySelectorAll('.league-item').forEach(i => i.classList.remove('active-league'));
   if (currentView !== 'home') navigate('home');
+  refreshHome();
+  showToast(`◈ ${SPORT_LABELS[homeSport] || 'Todos'}`);
 }));
+
+// Barra lateral – filtro por liga
 document.querySelectorAll('.league-item').forEach(item => item.addEventListener('click', () => {
-  document.querySelectorAll('.league-item').forEach(i=>i.classList.remove('active-league'));
+  document.querySelectorAll('.league-item').forEach(i => i.classList.remove('active-league'));
   item.classList.add('active-league');
+  homeLeague = item.dataset.league || 'all';
   if (currentView !== 'home') navigate('home');
+  refreshHome();
+  showToast(`◈ ${item.textContent.trim()}`);
+  document.getElementById('sidebarLeft').classList.remove('open'); // fecha menu no mobile
 }));
+
+// Re-renderiza as seções da home aplicando os filtros atuais.
+function refreshHome() {
+  renderLiveCards();
+  renderMatchTable(currentFilter);
+  document.getElementById('liveCards')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
 
 // Bet slip tabs
 document.querySelectorAll('.bstab').forEach(tab => tab.addEventListener('click', () => {

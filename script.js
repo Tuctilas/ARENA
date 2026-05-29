@@ -67,9 +67,9 @@ let betHistoryFilter = 'all';
 
 // Liga (chave da barra lateral) → trecho do nome usado nos dados
 const LEAGUE_MATCH = {
-  brasileirao: 'brasileir', libertadores: 'libertadores', champions: 'champions',
-  premier: 'premier', laliga: 'la liga', seriea: 'serie a',
-  bundesliga: 'bundesliga', copabrasil: 'copa do brasil',
+  mocambola: 'moçambola', tacamoc: 'taça', cafchampions: 'caf champions',
+  premier: 'premier', laliga: 'la liga', champions: 'champions',
+  basquetemoc: 'basquete', esports: 'esl',
 };
 const SPORT_LABELS = {
   futebol:'Futebol', basquete:'Basquete', tenis:'Tênis', volei:'Vôlei',
@@ -93,7 +93,7 @@ let pwaInstallPrompt = null;
 // ════════════════════════════════════════════
 //  HELPERS
 // ════════════════════════════════════════════
-const fmt    = v => 'R$ ' + parseFloat(v).toFixed(2).replace('.', ',');
+const fmt    = v => parseFloat(v).toFixed(2).replace('.', ',') + ' MT';
 const fmtOdd = v => parseFloat(v).toFixed(2);
 const pct    = v => ((1/v)*100).toFixed(1) + '%';
 const nudge  = (v, r=.06) => Math.max(1.01, parseFloat((v+(Math.random()-.5)*r).toFixed(2)));
@@ -238,7 +238,8 @@ document.getElementById('registerForm').addEventListener('submit', async e => {
     name:      document.getElementById('regName').value,
     last_name: document.getElementById('regLastName').value,
     email:     document.getElementById('regEmail').value,
-    cpf:       document.getElementById('regCpf').value,
+    bi:        document.getElementById('regBi').value,
+    phone:     document.getElementById('regPhone').value,
     password:  document.getElementById('regPassword').value,
   });
 
@@ -988,7 +989,7 @@ async function renderVip() {
       <div class="vip-perk"><span class="vip-perk-icon">💰</span><div class="vip-perk-title">CASHBACK</div><div class="vip-perk-val">${cur.cashback}% semanal</div></div>
       <div class="vip-perk"><span class="vip-perk-icon">📈</span><div class="vip-perk-title">BÔNUS DE ODDS</div><div class="vip-perk-val">+${cur.oddBonus}% nas odds</div></div>
       <div class="vip-perk"><span class="vip-perk-icon">⚡</span><div class="vip-perk-title">SAQUE RÁPIDO</div><div class="vip-perk-val">${lvl>=3?'Prioritário':'Padrão'}</div></div>
-      <div class="vip-perk"><span class="vip-perk-icon">🎁</span><div class="vip-perk-title">FREEBETS</div><div class="vip-perk-val">${lvl>=2?'R$ '+lvl*10+'/semana':'Não disponível'}</div></div>
+      <div class="vip-perk"><span class="vip-perk-icon">🎁</span><div class="vip-perk-title">FREEBETS</div><div class="vip-perk-val">${lvl>=2?(lvl*100)+' MT/semana':'Não disponível'}</div></div>
       <div class="vip-perk"><span class="vip-perk-icon">📞</span><div class="vip-perk-title">SUPORTE</div><div class="vip-perk-val">${lvl>=4?'Gerente VIP':lvl>=2?'Prioritário':'Padrão'}</div></div>
       <div class="vip-perk"><span class="vip-perk-icon">🏆</span><div class="vip-perk-title">TORNEIOS</div><div class="vip-perk-val">${lvl>=3?'Acesso exclusivo':'Abertos'}</div></div>
     </div>
@@ -1003,7 +1004,7 @@ async function renderVip() {
         <span>${l.minPoints.toLocaleString()}${l.maxPoints?'–'+l.maxPoints.toLocaleString():'+'}pts</span>
         <span>${l.cashback}%</span>
         <span>+${l.oddBonus}%</span>
-        <span>R$ ${l.level*10}/sem</span>
+        <span>${l.level*100} MT/sem</span>
       </div>`).join('')}
     </div>`;
 }
@@ -1175,11 +1176,11 @@ function renderCasino() {
 }
 
 const PROMOS = [
-  {icon:'🎁',title:'BÔNUS DE BOAS-VINDAS', val:'100% até R$ 500',  desc:'Dobre seu primeiro depósito. Rollover 5x com odds ≥ 1.50.'},
-  {icon:'💰',title:'CASHBACK SEMANAL',      val:'10% toda semana',  desc:'10% de volta em perdas semanais, creditado toda segunda-feira.'},
-  {icon:'⚽',title:'SUPER ODDS',            val:'Odds turbinadas',  desc:'Um jogo por dia com odds especialmente aumentadas.'},
-  {icon:'🏆',title:'ACUMULADOR PREMIADO',   val:'Bônus até 100%',   desc:'Múltiplas com 3+ seleções recebem bônus progressivo.'},
-  {icon:'⚡',title:'FREEBET SEMANAL',       val:'R$ 20 grátis',     desc:'Faça 5 apostas de R$ 20+ e ganhe freebet de R$ 20.'},
+  {icon:'🎁',title:'BÓNUS DE BOAS-VINDAS', val:'100% até 5.000 MT', desc:'Dobre o seu primeiro depósito. Rollover 5x com odds ≥ 1.50.'},
+  {icon:'💰',title:'CASHBACK SEMANAL',      val:'10% toda semana',  desc:'10% de volta nas perdas semanais, creditado toda segunda-feira.'},
+  {icon:'⚽',title:'SUPER ODDS',            val:'Odds turbinadas',  desc:'Um jogo do Moçambola por dia com odds aumentadas.'},
+  {icon:'🏆',title:'ACUMULADOR PREMIADO',   val:'Bónus até 100%',   desc:'Múltiplas com 3+ seleções recebem bónus progressivo.'},
+  {icon:'⚡',title:'FREEBET SEMANAL',       val:'200 MT grátis',    desc:'Faça 5 apostas de 200 MT+ e ganhe uma freebet de 200 MT.'},
   {icon:'🎮',title:'PROMO E-SPORTS',        val:'Odds +15%',        desc:'CS2, Dota 2 e LoL com 15% acima da média do mercado.'},
 ];
 function renderPromo() {
@@ -1283,66 +1284,27 @@ document.querySelectorAll('.crypto-btn').forEach(btn => btn.addEventListener('cl
   btn.classList.add('active');
 }));
 
-// PIX QR
-document.getElementById('pixConfirmBtn').addEventListener('click', async () => {
-  const val = parseFloat(document.getElementById('pixAmount').value) || 50;
-  if (val < 10) { showToast('Valor mínimo: R$ 10'); return; }
-  generatePixQR();
-  document.getElementById('pixQr').style.display = 'block';
-  document.getElementById('pixConfirmBtn').style.display = 'none';
-  startPixTimer();
-  if (currentUser) {
-    const res = await api.post('/api/user/deposit', { method:'pix', amount:val });
-    if (res.newBalance) {
-      updateBalance(res.newBalance);
+// Depósito — um handler para todos os métodos.
+['mpesa','emola','mkesh','card','crypto','bank'].forEach(m => {
+  const btn = document.getElementById(m + 'ConfirmBtn');
+  if (!btn) return;
+  btn.addEventListener('click', async () => {
+    if (!currentUser) { openModal('loginModal'); return; }
+    const inp = document.getElementById(m + 'Amount');
+    const val = inp ? parseFloat(inp.value) || 0 : 100;
+    if (val < 50) { showToast('Valor mínimo: 50 MT'); return; }
+
+    const mobile = ['mpesa','emola','mkesh'].includes(m);
+    if (mobile) showToast('📲 Confirme o pagamento no seu telemóvel...');
+
+    const res = await api.post('/api/user/deposit', { method: m, amount: val });
+    if (res.error) { showToast('❌ ' + res.error); return; }
+    updateBalance(res.newBalance);
+    setTimeout(() => {
       showToast(`✅ Depósito de ${fmt(val)} confirmado!`);
-    }
-  }
-});
-
-// Other deposit buttons
-['card','boleto','crypto','picpay','bank'].forEach(m => {
-  const btn = document.getElementById(m+'ConfirmBtn');
-  if (btn) btn.addEventListener('click', async () => {
-    const inp = document.getElementById(m+'Amount') || document.getElementById('pixAmount');
-    const val = inp ? parseFloat(inp.value) || 100 : 100;
-    if (currentUser) {
-      const res = await api.post('/api/user/deposit', { method:m, amount:val });
-      if (res.newBalance) { updateBalance(res.newBalance); showToast(`✅ Depósito de ${fmt(val)} processado!`); closeModal('depositModal'); }
-    }
+      closeModal('depositModal');
+    }, mobile ? 1200 : 0);
   });
-});
-
-function generatePixQR() {
-  const grid = document.getElementById('qrGrid');
-  grid.innerHTML = '';
-  for (let i=0; i<441; i++) {
-    const cell = document.createElement('div');
-    const r=Math.floor(i/21), c=i%21;
-    const black = (r<7&&c<7)||(r<7&&c>13)||(r>13&&c<7)||((r>1&&r<5)&&(c>1&&c<5))||((r>1&&r<5)&&(c>14&&c<18))||((r>14&&r<18)&&(c>1&&c<5))||((r+c+r*c)%3===0);
-    cell.className='qr-cell '+(black?'qr-black':'qr-white');
-    grid.appendChild(cell);
-  }
-}
-
-function startPixTimer() {
-  clearInterval(pixTimerInterval);
-  let secs = 899;
-  pixTimerInterval = setInterval(() => {
-    const el = document.getElementById('pixTimerVal');
-    if (!el) { clearInterval(pixTimerInterval); return; }
-    const m=Math.floor(secs/60), s=secs%60;
-    el.textContent = m+':'+(s<10?'0':'')+s;
-    if (--secs < 0) clearInterval(pixTimerInterval);
-  }, 1000);
-}
-
-document.getElementById('copyPix').addEventListener('click', () => {
-  const code = document.getElementById('pixCode').textContent;
-  navigator.clipboard.writeText(code).catch(()=>{});
-  showToast('✅ Código PIX copiado!');
-  document.getElementById('copyPix').textContent = '✓ COPIADO';
-  setTimeout(()=>{ const b=document.getElementById('copyPix'); if(b) b.textContent='COPIAR'; },2000);
 });
 
 // ════════════════════════════════════════════
@@ -1353,7 +1315,7 @@ document.getElementById('withdrawLink').addEventListener('click', e => { e.preve
 document.getElementById('withdrawConfirmBtn').addEventListener('click', async () => {
   const amount = parseFloat(document.getElementById('withdrawAmount').value);
   const method = document.getElementById('withdrawMethod').value;
-  if (!amount || amount < 20) { showToast('Valor mínimo: R$ 20'); return; }
+  if (!amount || amount < 100) { showToast('Valor mínimo: 100 MT'); return; }
   const res = await api.post('/api/user/withdraw', { method, amount });
   if (res.error) { showToast('❌ ' + res.error); return; }
   updateBalance(res.newBalance);
@@ -1398,13 +1360,24 @@ function copyText(text, msg) {
   showToast(msg || '✅ Copiado!');
 }
 
-// CPF mask
-document.getElementById('regCpf').addEventListener('input', function() {
-  let v = this.value.replace(/\D/g,'').slice(0,11);
-  if(v.length>9)      v=v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4');
-  else if(v.length>6) v=v.replace(/(\d{3})(\d{3})(\d{3})/,'$1.$2.$3');
-  else if(v.length>3) v=v.replace(/(\d{3})(\d{3})/,'$1.$2');
-  this.value=v;
+// BI: 12 dígitos + 1 letra (ex.: 110100234567A)
+document.getElementById('regBi')?.addEventListener('input', function() {
+  let v = this.value.toUpperCase().replace(/[^0-9A-Z]/g, '');
+  const digits = v.replace(/[^0-9]/g, '').slice(0, 12);
+  const letter = (v.replace(/[^A-Z]/g, '')[0] || '');
+  this.value = digits + (digits.length === 12 ? letter : '');
+});
+
+// Telefone Moçambique: +258 8X XXX XXXX
+document.getElementById('regPhone')?.addEventListener('input', function() {
+  let d = this.value.replace(/\D/g, '');
+  if (d.startsWith('258')) d = d.slice(3);
+  d = d.slice(0, 9);
+  let out = '+258 ';
+  if (d.length > 0) out += d.slice(0, 2);
+  if (d.length > 2) out += ' ' + d.slice(2, 5);
+  if (d.length > 5) out += ' ' + d.slice(5, 9);
+  this.value = out.trim();
 });
 document.getElementById('cardNumber')?.addEventListener('input', function() {
   this.value = this.value.replace(/\D/g,'').slice(0,16).replace(/(\d{4})/g,'$1 ').trim();
@@ -1684,8 +1657,8 @@ function animateCounter(el, target, suffix = '', duration = 1800) {
     const eased = 1 - Math.pow(1 - prog, 3);
     const cur   = eased * numVal;
 
-    if (target.includes('M')) el.textContent = (cur / 1000000).toFixed(1) + 'M' + suffix;
-    else if (target.includes('B')) el.textContent = 'R$ ' + cur.toFixed(1) + 'B' + suffix;
+    if (target.includes('B')) el.textContent = cur.toFixed(1) + 'B+ MT';
+    else if (target.includes('M')) el.textContent = (cur / 1000000).toFixed(1) + 'M' + suffix;
     else if (target.includes('K')) el.textContent = Math.round(cur / 1000) + 'K' + suffix;
     else el.textContent = Math.round(cur) + suffix;
 
@@ -1700,7 +1673,7 @@ const heroObserver = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
     if (!entry.isIntersecting) return;
     const stats = document.querySelectorAll('.hero-stat strong');
-    const targets = ['2.4M+', '50K+', 'R$ 5B+'];
+    const targets = ['2.4M+', '50K+', '5B+ MT'];
     stats.forEach((el, i) => {
       const raw = targets[i];
       if (!raw) return;
@@ -1726,6 +1699,16 @@ window.showToast = function(msg, duration) {
 //  🎨 TEAM BADGE COLORS
 // ════════════════════════════════════════════
 const TEAM_COLORS = {
+  'Costa do Sol':        ['#0050A0','#fff'],
+  'Ferroviário Maputo':  ['#C80000','#fff'],
+  'Ferroviário Beira':   ['#C80000','#000'],
+  'Black Bulls':         ['#111','#FFD700'],
+  'UD Songo':            ['#0A7D2C','#fff'],
+  'Maxaquene':           ['#F2C200','#C80000'],
+  'Liga Desportiva':     ['#0050A0','#fff'],
+  'Textáfrica':          ['#0A7D2C','#fff'],
+  'Mamelodi Sundowns':   ['#F2C200','#0050A0'],
+  'Tottenham':           ['#132257','#fff'],
   'Flamengo':    ['#C80000','#000'],
   'Palmeiras':   ['#006437','#fff'],
   'Boca Juniors':['#003DA5','#FFD700'],

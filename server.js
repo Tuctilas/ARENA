@@ -110,21 +110,21 @@ function refreshVip(userId) {
 
 // ── Motor de odds ao vivo ────────────────────────────────────
 const liveGames = [
-  { id:'l1', league:'Brasileirão Série A', flag:'🇧🇷', sport:'futebol',
-    home:{ name:'Flamengo', abbr:'FLA', logo:'🔴', score:2 },
-    away:{ name:'Palmeiras', abbr:'PAL', logo:'💚', score:1 },
+  { id:'l1', league:'Moçambola', flag:'🇲🇿', sport:'futebol',
+    home:{ name:'Costa do Sol', abbr:'CDS', logo:'🔵', score:2 },
+    away:{ name:'Ferroviário Maputo', abbr:'CFM', logo:'🔴', score:1 },
     minute:67, period:'2º Tempo', odds:{ h:1.45, d:3.80, a:6.20 }, events:[],
     stats:{ possession:[58,42], shots:[12,7], shotsOn:[5,3], corners:[6,3], fouls:[8,11] } },
 
-  { id:'l2', league:'Copa Libertadores', flag:'🏆', sport:'futebol',
-    home:{ name:'Boca Juniors', abbr:'BOC', logo:'💛', score:0 },
-    away:{ name:'River Plate', abbr:'RIV', logo:'⬜', score:0 },
+  { id:'l2', league:'CAF Champions League', flag:'🏆', sport:'futebol',
+    home:{ name:'Black Bulls', abbr:'BBU', logo:'⚫', score:0 },
+    away:{ name:'UD Songo', abbr:'SON', logo:'🟢', score:0 },
     minute:34, period:'1º Tempo', odds:{ h:2.10, d:3.20, a:3.40 }, events:[],
     stats:{ possession:[45,55], shots:[4,6], shotsOn:[1,2], corners:[2,4], fouls:[6,7] } },
 
-  { id:'l3', league:'NBB Nacional', flag:'🇧🇷', sport:'basquete',
-    home:{ name:'Franca', abbr:'FRA', logo:'🔵', score:58 },
-    away:{ name:'Flamengo', abbr:'FLA', logo:'🔴', score:54 },
+  { id:'l3', league:'Liga Moçambicana de Basquete', flag:'🇲🇿', sport:'basquete',
+    home:{ name:'Ferroviário Maputo', abbr:'CFM', logo:'🔴', score:58 },
+    away:{ name:'Maxaquene', abbr:'MAX', logo:'🟡', score:54 },
     minute:null, period:'Q3', odds:{ h:1.72, d:null, a:2.05 }, events:[],
     stats:{ possession:[52,48], shots:[24,21], shotsOn:[24,21], corners:[0,0], fouls:[12,9] } },
 
@@ -260,28 +260,29 @@ function auth(req, res, next) {
   }
 }
 
-const publicUser = u => { const { password, cpf, ...safe } = u; return safe; };
+const publicUser = u => { const { password, bi, ...safe } = u; return safe; };
 
 app.post('/api/auth/register', async (req, res) => {
   try {
     const name     = clean(req.body.name, 40);
     const lastName = clean(req.body.last_name, 40);
     const email    = clean(req.body.email, 120).toLowerCase();
-    const cpf      = clean(req.body.cpf, 14);
+    const bi       = clean(req.body.bi, 20);
+    const phone    = clean(req.body.phone, 20);
     const password = String(req.body.password ?? '');
 
     if (!name || !email || !password)  return res.status(400).json({ error: 'Dados obrigatórios' });
     if (!isEmail(email))               return res.status(400).json({ error: 'E-mail inválido' });
     if (password.length < 6)           return res.status(400).json({ error: 'A senha precisa de ao menos 6 caracteres' });
-    if (dbFindOne('users', u => u.email === email)) return res.status(400).json({ error: 'E-mail já cadastrado' });
+    if (dbFindOne('users', u => u.email === email)) return res.status(400).json({ error: 'E-mail já registado' });
 
     const hash = await bcrypt.hash(password, 10);
     const user = dbInsert('users', {
-      name, last_name: lastName, email, cpf,
+      name, last_name: lastName, email, bi, phone,
       password: hash, balance: 50, vip_level: 1, vip_points: 0,
     });
     const token = jwt.sign({ id: user.id }, SECRET, { expiresIn: '7d' });
-    notify(user.id, '🎉 Bem-vindo à ArenaBet!', `Olá ${name}! Bônus de R$ 50,00 já disponível.`, 'info');
+    notify(user.id, '🎉 Bem-vindo à ArenaBet!', `Olá ${name}! Bónus de 50,00 MT já disponível.`, 'info');
     res.json({ token, user: publicUser(user) });
   } catch (e) {
     console.error('register:', e);
@@ -321,14 +322,14 @@ app.get('/api/odds/live/:id', (req, res) => {
 });
 
 app.get('/api/odds/upcoming', (_, res) => res.json([
-  { id:'u1', league:'Brasileirão', flag:'🇧🇷', time:'Hoje 16:00', sport:'futebol', home:{name:'Corinthians',logo:'⬛'}, away:{name:'São Paulo',logo:'🔴'}, odds:{h:2.30,d:3.10,a:2.90}, filter:'hoje'   },
-  { id:'u2', league:'Brasileirão', flag:'🇧🇷', time:'Hoje 19:00', sport:'futebol', home:{name:'Grêmio',logo:'🔵'}, away:{name:'Atletico MG',logo:'⚫'}, odds:{h:2.70,d:3.00,a:2.50}, filter:'hoje'   },
-  { id:'u3', league:'Champions',   flag:'⭐', time:'Hoje 21:00', sport:'futebol', home:{name:'Real Madrid',logo:'⚪'}, away:{name:'Man City',logo:'🔵'}, odds:{h:1.95,d:3.50,a:3.80}, filter:'hoje'   },
-  { id:'u4', league:'Premier',     flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', time:'Amanhã 13:30', sport:'futebol', home:{name:'Arsenal',logo:'🔴'}, away:{name:'Liverpool',logo:'🔴'}, odds:{h:2.40,d:3.30,a:2.80}, filter:'amanha' },
-  { id:'u5', league:'La Liga',     flag:'🇪🇸', time:'Amanhã 17:00', sport:'futebol', home:{name:'Barcelona',logo:'🔵'}, away:{name:'Atletico',logo:'🔴'}, odds:{h:1.80,d:3.60,a:4.20}, filter:'amanha' },
-  { id:'u6', league:'Libertadores',flag:'🏆', time:'Sáb 21:30', sport:'futebol', home:{name:'Fluminense',logo:'💚'}, away:{name:'Nacional',logo:'⬜'}, odds:{h:1.60,d:3.80,a:5.50}, filter:'semana' },
-  { id:'u7', league:'Bundesliga',  flag:'🇩🇪', time:'Dom 15:30', sport:'futebol', home:{name:'Bayern',logo:'🔴'}, away:{name:'Dortmund',logo:'💛'}, odds:{h:1.55,d:4.00,a:5.80}, filter:'semana' },
-  { id:'u8', league:'Copa Brasil', flag:'🇧🇷', time:'Dom 16:00', sport:'futebol', home:{name:'Vasco',logo:'⬛'}, away:{name:'Botafogo',logo:'⬛'}, odds:{h:2.90,d:3.10,a:2.40}, filter:'semana' },
+  { id:'u1', league:'Moçambola', flag:'🇲🇿', time:'Hoje 15:00', sport:'futebol', home:{name:'Maxaquene',logo:'🟡'}, away:{name:'Liga Desportiva',logo:'🔵'}, odds:{h:2.30,d:3.10,a:2.90}, filter:'hoje'   },
+  { id:'u2', league:'Moçambola', flag:'🇲🇿', time:'Hoje 18:00', sport:'futebol', home:{name:'Ferroviário Beira',logo:'🔴'}, away:{name:'Textáfrica',logo:'🟢'}, odds:{h:2.70,d:3.00,a:2.50}, filter:'hoje'   },
+  { id:'u3', league:'CAF Champions', flag:'🏆', time:'Hoje 20:00', sport:'futebol', home:{name:'Black Bulls',logo:'⚫'}, away:{name:'Mamelodi Sundowns',logo:'🟡'}, odds:{h:1.95,d:3.50,a:3.80}, filter:'hoje'   },
+  { id:'u4', league:'Premier', flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', time:'Amanhã 13:30', sport:'futebol', home:{name:'Arsenal',logo:'🔴'}, away:{name:'Liverpool',logo:'🔴'}, odds:{h:2.40,d:3.30,a:2.80}, filter:'amanha' },
+  { id:'u5', league:'La Liga', flag:'🇪🇸', time:'Amanhã 17:00', sport:'futebol', home:{name:'Barcelona',logo:'🔵'}, away:{name:'Atletico',logo:'🔴'}, odds:{h:1.80,d:3.60,a:4.20}, filter:'amanha' },
+  { id:'u6', league:'Moçambola', flag:'🇲🇿', time:'Sáb 16:00', sport:'futebol', home:{name:'UD Songo',logo:'🟢'}, away:{name:'Costa do Sol',logo:'🔵'}, odds:{h:1.60,d:3.80,a:5.50}, filter:'semana' },
+  { id:'u7', league:'Premier', flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', time:'Dom 15:30', sport:'futebol', home:{name:'Man City',logo:'🔵'}, away:{name:'Tottenham',logo:'⚪'}, odds:{h:1.55,d:4.00,a:5.80}, filter:'semana' },
+  { id:'u8', league:'Taça de Moçambique', flag:'🇲🇿', time:'Dom 16:00', sport:'futebol', home:{name:'Ferroviário Maputo',logo:'🔴'}, away:{name:'Black Bulls',logo:'⚫'}, odds:{h:2.90,d:3.10,a:2.40}, filter:'semana' },
 ]));
 
 // ── Apostas ──────────────────────────────────────────────────
@@ -426,8 +427,8 @@ app.get('/api/user/balance', auth, (req, res) => {
 app.post('/api/user/deposit', auth, (req, res) => {
   const method = clean(req.body.method, 20);
   const amount = Number(req.body.amount);
-  if (!Number.isFinite(amount) || amount < 10 || amount > 1_000_000) {
-    return res.status(400).json({ error: 'Valor inválido (mín. R$ 10)' });
+  if (!Number.isFinite(amount) || amount < 50 || amount > 1_000_000) {
+    return res.status(400).json({ error: 'Valor inválido (mín. 50 MT)' });
   }
   dbInsert('deposits', { user_id: req.user.id, method, amount, status: 'completed' });
   creditBalance(req.user.id, amount, Math.floor(amount / 10));
@@ -439,7 +440,7 @@ app.post('/api/user/deposit', auth, (req, res) => {
 app.post('/api/user/withdraw', auth, (req, res) => {
   const method = clean(req.body.method, 20) || 'pix';
   const amount = Number(req.body.amount);
-  if (!Number.isFinite(amount) || amount < 20) return res.status(400).json({ error: 'Valor inválido (mín. R$ 20)' });
+  if (!Number.isFinite(amount) || amount < 100) return res.status(400).json({ error: 'Valor inválido (mín. 100 MT)' });
 
   const user = dbFindOne('users', u => u.id === req.user.id);
   if (!user || user.balance < amount) return res.status(400).json({ error: 'Saldo insuficiente' });

@@ -417,9 +417,9 @@ function renderLiveCards() {
         <span class="live-league">${g.flag} ${g.league}</span>
       </div>
       <div class="live-teams">
-        <div class="live-team"><span class="live-team-logo">${g.home.logo}</span><span class="live-team-name">${g.home.name}</span></div>
+        <div class="live-team"><span class="live-team-logo">${teamBadge(g.home.name)}</span><span class="live-team-name">${g.home.name}</span></div>
         <div class="live-score"><span class="live-score-value">${g.home.score} — ${g.away.score}</span><span class="live-time">${time}</span></div>
-        <div class="live-team"><span class="live-team-logo">${g.away.logo}</span><span class="live-team-name">${g.away.name}</span></div>
+        <div class="live-team"><span class="live-team-logo">${teamBadge(g.away.name)}</span><span class="live-team-name">${g.away.name}</span></div>
       </div>
       <div class="market-payout">◈ Retorno: ${ret}%</div>
       <div class="live-odds ${oddsArr.length===2?'two-col':''}">
@@ -463,8 +463,8 @@ function renderMatchTable(filter='all') {
         <span style="font-family:var(--font-hud);font-size:8px;color:rgba(0,255,157,.55);margin-top:2px;">↩ ${ret}%</span>
       </div>
       <div class="match-teams">
-        <div class="match-team"><span class="match-team-logo">${g.home.logo}</span>${g.home.name}</div>
-        <div class="match-team"><span class="match-team-logo">${g.away.logo}</span>${g.away.name}</div>
+        <div class="match-team"><span class="match-team-logo">${teamBadge(g.home.name)}</span>${g.home.name}</div>
+        <div class="match-team"><span class="match-team-logo">${teamBadge(g.away.name)}</span>${g.away.name}</div>
       </div>
       <div class="match-odds">
         ${[{l:'1',v:g.odds.h},{l:'X',v:g.odds.d},{l:'2',v:g.odds.a}].map(o => {
@@ -525,9 +525,9 @@ function renderLiveEventsList() {
     <div class="live-event-item ${selectedMatch===g.id?'active-event':''}" onclick="openMatchDetail('${g.id}')">
       <div class="lei-header"><span class="lei-league">${g.flag} ${g.league}</span><span class="lei-time">${time}</span></div>
       <div class="lei-teams">
-        <div class="lei-team"><span class="lei-team-logo">${g.home.logo}</span><span class="lei-team-name">${g.home.name}</span></div>
+        <div class="lei-team"><span class="lei-team-logo">${teamBadge(g.home.name)}</span><span class="lei-team-name">${g.home.name}</span></div>
         <span class="lei-score">${g.home.score}–${g.away.score}</span>
-        <div class="lei-team"><span class="lei-team-logo">${g.away.logo}</span><span class="lei-team-name">${g.away.name}</span></div>
+        <div class="lei-team"><span class="lei-team-logo">${teamBadge(g.away.name)}</span><span class="lei-team-name">${g.away.name}</span></div>
       </div>
       <div style="font-family:var(--font-hud);font-size:7px;color:rgba(0,255,157,.45);text-align:right;margin-bottom:4px;">↩ ${ret}%</div>
       <div class="lei-quick-odds">
@@ -563,13 +563,13 @@ function renderMatchDetail(id) {
     <div class="match-scoreboard">
       <div class="msb-league"><span>${g.flag} ${g.league}</span><span class="msb-badge">● AO VIVO</span></div>
       <div class="msb-main">
-        <div class="msb-team"><span class="msb-logo">${g.home.logo}</span><span class="msb-name">${g.home.name}</span></div>
+        <div class="msb-team"><span class="msb-logo">${teamBadge(g.home.name)}</span><span class="msb-name">${g.home.name}</span></div>
         <div class="msb-center">
           <div class="msb-score" id="msb-score-${id}">${g.home.score} — ${g.away.score}</div>
           <div class="msb-time"  id="msb-time-${id}">${time}</div>
           <div class="msb-period">${g.period}</div>
         </div>
-        <div class="msb-team"><span class="msb-logo">${g.away.logo}</span><span class="msb-name">${g.away.name}</span></div>
+        <div class="msb-team"><span class="msb-logo">${teamBadge(g.away.name)}</span><span class="msb-name">${g.away.name}</span></div>
       </div>
     </div>
 
@@ -1232,9 +1232,9 @@ function renderEsports() {
           <span class="live-league">${g.flag} ${g.league}</span>
         </div>
         <div class="live-teams">
-          <div class="live-team"><span class="live-team-logo">${g.home.logo}</span><span class="live-team-name">${g.home.name}</span></div>
+          <div class="live-team"><span class="live-team-logo">${teamBadge(g.home.name)}</span><span class="live-team-name">${g.home.name}</span></div>
           <div class="live-score"><span class="live-score-value">${g.home.score}–${g.away.score}</span><span class="live-time">${g.period}</span></div>
-          <div class="live-team"><span class="live-team-logo">${g.away.logo}</span><span class="live-team-name">${g.away.name}</span></div>
+          <div class="live-team"><span class="live-team-logo">${teamBadge(g.away.name)}</span><span class="live-team-name">${g.away.name}</span></div>
         </div>
         <div class="market-payout">↩ ${(100/bk).toFixed(1)}% retorno</div>
         <div class="live-odds two-col">
@@ -1749,42 +1749,23 @@ const TEAM_COLORS = {
   'Atletico MG': ['#111','#fff'],
   'Vasco':       ['#000','#fff'],
   'Botafogo':    ['#111','#fff'],
+  'Liverpool':   ['#C8102E','#fff'],
+  'Atletico':    ['#CB3524','#fff'],
+  'Nacional':    ['#fff','#0038A8'],
+  'Crazy Time':  ['#8B5CF6','#fff'],
 };
 
-function getTeamInitials(name) {
-  const words = name.split(' ');
-  if (words.length === 1) return name.slice(0, 3).toUpperCase();
-  return words.slice(0, 2).map(w => w[0]).join('').toUpperCase();
+// Iniciais do time (até 2 letras) para o escudo.
+function teamInitials(name) {
+  const w = (name || '?').trim().split(/\s+/);
+  return (w.length === 1 ? name.slice(0, 3) : w.slice(0, 2).map(p => p[0]).join('')).toUpperCase();
 }
 
-// Override live card logos with styled badges
-function enhanceTeamLogos() {
-  document.querySelectorAll('.live-team-logo, .lei-team-logo, .msb-logo').forEach(el => {
-    const text = el.textContent.trim();
-    if (!text || text.match(/^[\u{1F300}-\u{1FFFF}]/u)) {
-      // it's an emoji — find team name from sibling
-      const nameEl = el.closest('.live-team, .lei-team, .msb-team')?.querySelector('.live-team-name, .lei-team-name, .msb-name');
-      if (!nameEl) return;
-      const name   = nameEl.textContent.trim();
-      const colors = TEAM_COLORS[name];
-      if (!colors) return;
-      const badge = document.createElement('span');
-      badge.className = 'team-badge';
-      badge.textContent = getTeamInitials(name);
-      badge.style.cssText = `background:${colors[0]};color:${colors[1]};font-size:12px;font-family:var(--font-hud);font-weight:900;width:40px;height:40px;`;
-      el.replaceWith(badge);
-    }
-  });
+// Escudo do time: círculo com as cores oficiais e as iniciais.
+function teamBadge(name) {
+  const c = TEAM_COLORS[name] || ['#1b2235', '#9fd8ff'];
+  return `<span class="team-badge" style="background:${c[0]};color:${c[1]}">${teamInitials(name)}</span>`;
 }
-
-// Run after each render
-const _origRenderLiveCards2 = renderLiveCards;
-window.renderLiveCards = function() {
-  _origRenderLiveCards2();
-  setTimeout(enhanceTeamLogos, 30);
-};
-
-setTimeout(enhanceTeamLogos, 1000);
 
 // ════════════════════════════════════════════
 //  🎰 CASSINO — jogos com RNG no servidor

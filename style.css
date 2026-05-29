@@ -1355,8 +1355,10 @@ input  { font-family: inherit; }
   font-family: var(--font-hud); letter-spacing: -1px;
   flex-shrink: 0;
 }
-.live-team-logo .team-badge { width: 44px; height: 44px; font-size: 20px; }
-.msb-logo .team-badge { width: 64px; height: 64px; font-size: 28px; }
+.live-team-logo .team-badge { width: 44px; height: 44px; font-size: 14px; }
+.lei-team-logo .team-badge  { width: 30px; height: 30px; font-size: 10px; }
+.match-team-logo .team-badge{ width: 24px; height: 24px; font-size: 9px; }
+.msb-logo .team-badge { width: 58px; height: 58px; font-size: 18px; }
 
 /* ═══════════════════════════════════════════
    MUTE BUTTON

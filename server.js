@@ -31,6 +31,9 @@ app.use((req, res, next) => {
 });
 app.use(express.static(__dirname, { dotfiles: 'deny' }));
 
+// A raiz sempre devolve o index — não depende do comportamento padrão do static.
+app.get('/', (_, res) => res.sendFile(path.join(__dirname, 'index.html')));
+
 // ── Banco de dados em arquivos JSON ──────────────────────────
 if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR);
 

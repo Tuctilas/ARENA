@@ -18,6 +18,11 @@ if (!process.env.JWT_SECRET) {
   console.warn('  ⚠  JWT_SECRET não definido — usando segredo temporário. Defina a variável em produção.');
 }
 
+// Margem da casa (0 = jogo justo · 1 = quase impossível ganhar).
+// Fase inicial agressiva = 0.45. Para voltar ao normal, defina a variável
+// de ambiente HOUSE_EDGE=0.03 no Render (não precisa mexer no código).
+const HOUSE_EDGE = Math.min(0.9, Math.max(0, Number(process.env.HOUSE_EDGE ?? 0.45)));
+
 app.use(cors({ origin: process.env.CORS_ORIGIN || true }));
 app.use(express.json({ limit: '32kb' }));
 
@@ -229,7 +234,8 @@ setInterval(() => {
   // Resolve apostas pendentes com mais de 5 minutos.
   const cutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
   dbFind('bets', b => b.status === 'pending' && b.created_at < cutoff).forEach(bet => {
-    const won = Math.random() > 0.52;
+    // Chance de vitória cai conforme a margem da casa (0.48 no jogo justo).
+    const won = Math.random() > (0.52 + HOUSE_EDGE * 0.4);
     dbUpdate('bets', b => b.id === bet.id, { status: won ? 'won' : 'lost', settled_at: new Date().toISOString() });
     if (won) {
       creditBalance(bet.user_id, bet.potential, Math.floor(bet.stake));
@@ -558,7 +564,8 @@ app.post('/api/casino/play', auth, (req, res) => {
 
   if (game === 'crash') {
     const target = Math.max(1.01, Math.min(50, Number(pick) || 2));
-    const crash  = Math.max(1, +(0.97 / (1 - rng())).toFixed(2)); // margem da casa ~3%
+    // Quanto maior o HOUSE_EDGE, mais cedo o foguete explode.
+    const crash  = Math.max(1, +((1 - HOUSE_EDGE) / (1 - rng())).toFixed(2));
     if (target <= crash) multiplier = target;
     detail = { crash, target };
 
@@ -590,6 +597,10 @@ app.post('/api/casino/play', auth, (req, res) => {
   } else {
     return res.status(400).json({ error: 'Jogo inválido' });
   }
+
+  // Margem da casa nos jogos sem crash: chance de anular o prêmio.
+  // (No crash a margem já está embutida no ponto de explosão.)
+  if (game !== 'crash' && multiplier > 0 && rng() < HOUSE_EDGE) multiplier = 0;
 
   const winnings = +(stake * multiplier).toFixed(2);
   if (winnings > 0) creditBalance(req.user.id, winnings);

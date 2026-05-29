@@ -114,9 +114,12 @@ function timeAgo(dateStr) {
   return Math.floor(h/24) + 'd atrás';
 }
 
+// Remove símbolos/emojis decorativos do início das mensagens.
+const stripIcons = s => s.replace(/[←-⇿⌀-➿⬀-⯿️\u{1F000}-\u{1FAFF}◈◷●]/gu, '').replace(/\s{2,}/g, ' ').trim();
+
 function showToast(msg, duration=2800) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
+  t.textContent = stripIcons(msg);
   t.classList.add('show');
   clearTimeout(t._tid);
   t._tid = setTimeout(() => t.classList.remove('show'), duration);
@@ -259,7 +262,7 @@ function onLogin(user) {
   document.getElementById('userMenu').style.display    = 'flex';
   document.getElementById('balanceDisplay').style.display = 'flex';
   document.getElementById('notifWrap').style.display   = 'flex';
-  document.getElementById('btnUser').textContent = `◈ ${user.name.toUpperCase().slice(0,10)} ▾`;
+  document.getElementById('btnUser').textContent = `${user.name.split(' ')[0]} ▾`;
   updateBalance(user.balance);
   showToast(`⚡ BEM-VINDO, ${user.name.toUpperCase()}! SALDO: ${fmt(user.balance)}`);
   pollNotifications();
@@ -283,7 +286,7 @@ document.getElementById('btnLogout').addEventListener('click', () => {
   betSlip = [];
   renderBetSlip(); renderAllCards();
   navigate('home');
-  showToast('◈ Sessão encerrada');
+  showToast('Sessão encerrada');
 });
 
 // Auto-login on load
@@ -398,7 +401,7 @@ function renderLiveCards() {
 
   if (!filtered.length) {
     const nome = homeSport !== 'all' ? (SPORT_LABELS[homeSport] || homeSport) : 'esta seleção';
-    el.innerHTML = `<div class="empty-filter">⚡ Nenhum evento ao vivo de <strong>${nome}</strong> no momento.<br><span>Veja os próximos jogos abaixo ou escolha outro esporte.</span></div>`;
+    el.innerHTML = `<div class="empty-filter">Nenhum evento ao vivo de <strong>${nome}</strong> no momento.<br><span>Veja os próximos jogos abaixo ou escolha outro esporte.</span></div>`;
     return;
   }
 
@@ -422,7 +425,7 @@ function renderLiveCards() {
         <div class="live-score"><span class="live-score-value">${g.home.score} — ${g.away.score}</span><span class="live-time">${time}</span></div>
         <div class="live-team"><span class="live-team-logo">${teamBadge(g.away.name)}</span><span class="live-team-name">${g.away.name}</span></div>
       </div>
-      <div class="market-payout">◈ Retorno: ${ret}%</div>
+      <div class="market-payout">Retorno: ${ret}%</div>
       <div class="live-odds ${oddsArr.length===2?'two-col':''}">
         ${oddsArr.map(o => {
           const ip  = ((1/o.v)/book*100).toFixed(1);
@@ -449,7 +452,7 @@ function renderMatchTable(filter='all') {
   const el = document.getElementById('matchTable');
 
   if (!games.length) {
-    el.innerHTML = `<div class="empty-filter">📅 Nenhum jogo agendado para este filtro.</div>`;
+    el.innerHTML = `<div class="empty-filter">Nenhum jogo agendado para este filtro.</div>`;
     return;
   }
 
@@ -460,7 +463,7 @@ function renderMatchTable(filter='all') {
     return `<div class="match-row">
       <div class="match-meta">
         <span class="match-league">${g.flag} ${g.league}</span>
-        <span class="match-time">◷ ${g.time}</span>
+        <span class="match-time">${g.time}</span>
         <span style="font-family:var(--font-hud);font-size:8px;color:rgba(0,255,157,.55);margin-top:2px;">↩ ${ret}%</span>
       </div>
       <div class="match-teams">
@@ -609,7 +612,7 @@ function buildStatsBar(g) {
   ];
   return `
   <div class="match-stats">
-    <div class="match-stats-title">◈ ESTATÍSTICAS DA PARTIDA</div>
+    <div class="match-stats-title">ESTATÍSTICAS DA PARTIDA</div>
     ${statsRows.map(row => {
       const total = row.h + row.a || 1;
       const hPct  = Math.round(row.h/total*100);
@@ -739,7 +742,7 @@ function toggleBet(gameId, matchName, label, market, odd) {
   const idx = betSlip.findIndex(b=>b.gameId===gameId && b.label===label);
   if (idx > -1) {
     betSlip.splice(idx, 1);
-    showToast('◈ Seleção removida');
+    showToast('Seleção removida');
   } else {
     betSlip = betSlip.filter(b=>b.gameId!==gameId);
     betSlip.push({ gameId, matchName, label, market, odd });
@@ -807,7 +810,7 @@ document.querySelectorAll('.stake-preset').forEach(btn => {
 document.getElementById('clearBets').addEventListener('click', () => {
   betSlip = []; renderBetSlip(); renderAllCards(); renderMatchTable(currentFilter); renderPopular();
   if(currentView==='live'&&selectedMatch) renderMatchDetail(selectedMatch);
-  updateBetCount(); showToast('◈ Cupom limpo');
+  updateBetCount(); showToast('Cupom limpo');
 });
 
 document.getElementById('placeBetBtn').addEventListener('click', async () => {
@@ -856,7 +859,7 @@ document.querySelectorAll('.sport-item').forEach(item => item.addEventListener('
   document.querySelectorAll('.league-item').forEach(i => i.classList.remove('active-league'));
   if (currentView !== 'home') navigate('home');
   refreshHome();
-  showToast(`◈ ${SPORT_LABELS[homeSport] || 'Todos'}`);
+  showToast(`${SPORT_LABELS[homeSport] || 'Todos'}`);
 }));
 
 // Barra lateral – filtro por liga
@@ -866,7 +869,7 @@ document.querySelectorAll('.league-item').forEach(item => item.addEventListener(
   homeLeague = item.dataset.league || 'all';
   if (currentView !== 'home') navigate('home');
   refreshHome();
-  showToast(`◈ ${item.textContent.trim()}`);
+  showToast(`${item.textContent.trim()}`);
   document.getElementById('sidebarLeft').classList.remove('open'); // fecha menu no mobile
 }));
 
@@ -1039,7 +1042,7 @@ function renderAfiliados() {
     </div>` : ''}
 
     <div class="afil-how">
-      <h3>◈ COMO FUNCIONA</h3>
+      <h3>COMO FUNCIONA</h3>
       <div class="afil-step">
         <span class="afil-step-num">01</span>
         <div class="afil-step-info"><strong>Compartilhe seu link</strong><p>Envie seu link único para amigos, redes sociais ou canais.</p></div>
@@ -1090,7 +1093,7 @@ async function renderPerfil() {
     </div>
 
     <div class="perfil-section">
-      <div class="perfil-section-title">◈ INFORMAÇÕES DA CONTA</div>
+      <div class="perfil-section-title">INFORMAÇÕES DA CONTA</div>
       <div class="form-row-2">
         <div class="form-group"><label>NOME</label><input type="text" id="pName" value="${user.name}" /></div>
         <div class="form-group"><label>SOBRENOME</label><input type="text" id="pLast" value="${user.last_name||''}" /></div>
@@ -1101,14 +1104,14 @@ async function renderPerfil() {
     </div>
 
     <div class="perfil-section">
-      <div class="perfil-section-title">◈ ALTERAR SENHA</div>
+      <div class="perfil-section-title">ALTERAR SENHA</div>
       <div class="form-group"><label>SENHA ATUAL</label><input type="password" id="pCurrPass" placeholder="••••••••" /></div>
       <div class="form-group"><label>NOVA SENHA</label><input type="password" id="pNewPass" placeholder="••••••••" /></div>
       <button class="btn-submit" style="margin-top:4px;" onclick="changePassword()">ALTERAR SENHA</button>
     </div>
 
     <div class="perfil-section">
-      <div class="perfil-section-title">◈ HISTÓRICO DE TRANSAÇÕES</div>
+      <div class="perfil-section-title">HISTÓRICO DE TRANSAÇÕES</div>
       <div class="perfil-transactions">
         ${!txData.length ? '<div style="text-align:center;padding:20px;color:rgba(234,234,234,.3);font-size:12px;">Nenhuma transação ainda</div>' :
           txData.map(tx=>`
@@ -1751,7 +1754,7 @@ function teamBadge(name) {
 }
 
 // ════════════════════════════════════════════
-//  🎰 CASSINO — jogos com RNG no servidor
+//  CASSINO — jogos com RNG no servidor
 // ════════════════════════════════════════════
 let casinoGame = null;
 let casinoBusy = false;
@@ -1802,7 +1805,7 @@ function buildCasinoUI(type) {
           <input type="number" id="crashTarget" value="2.0" step="0.1" min="1.01" class="casino-stake-input" style="max-width:80px;">
         </div>
       </div>
-      ${stakeControls('🚀 LANÇAR')}`;
+      ${stakeControls('LANÇAR')}`;
     bindChips();
     document.querySelectorAll('.crash-tbtn').forEach(b => b.addEventListener('click', () => {
       document.querySelectorAll('.crash-tbtn').forEach(x => x.classList.remove('active'));
@@ -1821,7 +1824,7 @@ function buildCasinoUI(type) {
           <button class="rpick" data-pick="green" style="--c:#1a7a2e">VERDE 14x</button>
         </div>
       </div>
-      ${stakeControls('🎡 GIRAR')}`;
+      ${stakeControls('GIRAR')}`;
     bindChips();
     document.querySelectorAll('#roletaPicks .rpick').forEach(b => b.addEventListener('click', () => {
       document.querySelectorAll('#roletaPicks .rpick').forEach(x => x.classList.remove('active'));
@@ -1831,7 +1834,7 @@ function buildCasinoUI(type) {
 
   } else if (type === 'slots') {
     stage.innerHTML = `<div class="slots-stage"><div class="slot-reel" id="r0">🎰</div><div class="slot-reel" id="r1">🎰</div><div class="slot-reel" id="r2">🎰</div></div><div class="slots-msg" id="slotsMsg">Combine 3 e ganhe até 100x!</div>`;
-    ctrl.innerHTML = stakeControls('🎰 GIRAR');
+    ctrl.innerHTML = stakeControls('GIRAR');
     bindChips();
     document.getElementById('casinoGoBtn').addEventListener('click', playSlots);
 
@@ -1845,7 +1848,7 @@ function buildCasinoUI(type) {
           <button class="rpick" data-pick="tie" style="--c:#FFD700">EMPATE 14x</button>
         </div>
       </div>
-      ${stakeControls('🐉 APOSTAR')}`;
+      ${stakeControls('APOSTAR')}`;
     bindChips();
     document.querySelectorAll('#doublePicks .rpick').forEach(b => b.addEventListener('click', () => {
       document.querySelectorAll('#doublePicks .rpick').forEach(x => x.classList.remove('active'));
@@ -1859,7 +1862,7 @@ async function casinoPlay(pick) {
   if (casinoBusy) return null;
   const stake = casinoStake();
   if (stake < 1) { showToast('Valor mínimo R$ 1'); return null; }
-  if (currentUser && stake > currentUser.balance) { showToast('◈ Saldo insuficiente'); return null; }
+  if (currentUser && stake > currentUser.balance) { showToast('Saldo insuficiente'); return null; }
   casinoBusy = true;
   document.getElementById('casinoGoBtn').disabled = true;
   const res = await api.post('/api/casino/play', { game: casinoGame.game, stake, pick });
@@ -1954,7 +1957,7 @@ async function playDouble() {
   out.textContent = 'Virando...';
   setTimeout(() => {
     card.className = 'double-card';
-    const map = { a:'🐉 DRAGÃO', b:'🐯 TIGRE', tie:'🟰 EMPATE' };
+    const map = { a:'DRAGÃO', b:'🐯 TIGRE', tie:'🟰 EMPATE' };
     card.textContent = res.detail.result === 'a' ? '🐉' : res.detail.result === 'b' ? '🐯' : '🟰';
     out.textContent = map[res.detail.result];
     casinoDone(res, `${map[res.detail.result]}!`, `Saiu ${map[res.detail.result]}`);

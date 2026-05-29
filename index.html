@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>ArenaBet – A Plataforma do Futuro</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#00D9FF"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Exo+2:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+<canvas id="particleCanvas"></canvas>
+<div class="scanlines"></div>
+
+<!-- PWA INSTALL BANNER -->
+<div class="pwa-banner" id="pwaBanner">
+  <span class="pwa-icon">⬡</span>
+  <div class="pwa-text">
+    <strong>Instalar ArenaBet</strong>
+    <span>Acesso rápido na tela inicial</span>
+  </div>
+  <button class="pwa-install" id="pwaInstall">INSTALAR</button>
+  <button class="pwa-dismiss" id="pwaDismiss">✕</button>
+</div>
+
+<!-- ══════════ HEADER ══════════ -->
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <a href="#" class="logo" data-view="home">
+        <span class="logo-icon">⬡</span>
+        <span class="logo-arena">ARENA</span><span class="logo-bet">BET</span>
+      </a>
+      <nav class="top-nav">
+        <a href="#" class="top-nav-link active" data-view="home">Esportes</a>
+        <a href="#" class="top-nav-link" data-view="live">Ao Vivo<span class="live-dot-nav"></span></a>
+        <a href="#" class="top-nav-link neon-gold" data-view="casino">Casino</a>
+        <a href="#" class="top-nav-link" data-view="promo">Promoções</a>
+        <a href="#" class="top-nav-link" data-view="virtual">Virtual</a>
+        <a href="#" class="top-nav-link neon-purple" data-view="esports">E-Sports</a>
+      </nav>
+    </div>
+    <div class="header-right">
+      <!-- Search button -->
+      <button class="icon-btn" id="searchBtn" title="Buscar (Ctrl+K)">🔍</button>
+      <!-- Notifications -->
+      <div class="notif-wrap" id="notifWrap" style="display:none;">
+        <button class="icon-btn" id="notifBtn">🔔<span class="notif-badge" id="notifBadge">0</span></button>
+        <div class="notif-dropdown" id="notifDropdown">
+          <div class="notif-header">
+            <span>NOTIFICAÇÕES</span>
+            <button id="markAllRead">Marcar lidas</button>
+          </div>
+          <div class="notif-list" id="notifList"></div>
+        </div>
+      </div>
+      <!-- Balance -->
+      <div class="balance-hud" id="balanceDisplay" style="display:none;">
+        <span class="balance-label">CRÉDITOS</span>
+        <span class="balance-amount" id="balanceAmount">R$ 0,00</span>
+      </div>
+      <button class="btn-login" id="btnLogin">ENTRAR</button>
+      <button class="btn-register" id="btnRegister">REGISTRAR</button>
+      <div class="user-menu" id="userMenu" style="display:none;">
+        <div class="user-dropdown-wrap">
+          <button class="btn-user" id="btnUser">◈ CONTA ▾</button>
+          <div class="user-dropdown" id="userDropdown">
+            <a href="#" class="ud-item" data-view="mybets">📋 Minhas Apostas</a>
+            <a href="#" class="ud-item" data-view="vip">💎 VIP</a>
+            <a href="#" class="ud-item" data-view="perfil">⚙️ Perfil</a>
+            <a href="#" class="ud-item" id="withdrawLink">🏦 Sacar</a>
+            <div class="ud-divider"></div>
+            <a href="#" class="ud-item ud-logout" id="btnLogout">🚪 Sair</a>
+          </div>
+        </div>
+        <button class="btn-deposit" id="btnDeposit">+ DEPOSITAR</button>
+      </div>
+    </div>
+  </div>
+  <div class="header-line"></div>
+</header>
+
+<!-- TICKER -->
+<div class="promo-ticker">
+  <div class="ticker-label">⚡ HOT</div>
+  <div class="ticker-track">
+    <div class="ticker-inner">
+      <span>🎁 Bônus 100% até R$ 500 no primeiro depósito</span>
+      <span>⚽ Copa do Brasil – melhores odds garantidas</span>
+      <span>🏆 Champions League ao vivo agora</span>
+      <span>🎮 E-Sports: CS2 Final – odds imperdíveis</span>
+      <span>💰 Cashback semanal de 10%</span>
+      <span>🔴 <span id="tickerLiveCount">18</span> eventos ao vivo neste momento</span>
+      <span>💳 PIX em segundos · Saque em até 15min</span>
+      <span>🎁 Bônus 100% até R$ 500 no primeiro depósito</span>
+      <span>⚽ Copa do Brasil – melhores odds garantidas</span>
+      <span>💰 Cashback semanal de 10%</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ MAIN LAYOUT ══════════ -->
+<div class="main-layout">
+
+  <!-- LEFT SIDEBAR -->
+  <aside class="sidebar-left" id="sidebarLeft">
+    <div class="sidebar-section">
+      <div class="sidebar-title">◈ ESPORTES</div>
+      <ul class="sport-list">
+        <li class="sport-item active" data-sport="futebol"><span class="sport-icon">⚽</span>Futebol<span class="sport-count">342</span></li>
+        <li class="sport-item" data-sport="basquete"><span class="sport-icon">🏀</span>Basquete<span class="sport-count">87</span></li>
+        <li class="sport-item" data-sport="tenis"><span class="sport-icon">🎾</span>Tênis<span class="sport-count">124</span></li>
+        <li class="sport-item" data-sport="volei"><span class="sport-icon">🏐</span>Vôlei<span class="sport-count">45</span></li>
+        <li class="sport-item" data-sport="mma"><span class="sport-icon">🥊</span>MMA/Lutas<span class="sport-count">32</span></li>
+        <li class="sport-item" data-sport="americano"><span class="sport-icon">🏈</span>Fut. Americano<span class="sport-count">56</span></li>
+        <li class="sport-item" data-sport="esports"><span class="sport-icon">🎮</span>E-Sports<span class="sport-count">63</span></li>
+        <li class="sport-item" data-sport="formula1"><span class="sport-icon">🏎️</span>Fórmula 1<span class="sport-count">8</span></li>
+      </ul>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">◈ LIGAS</div>
+      <ul class="league-list">
+        <li class="league-item active-league" data-league="brasileirao">🇧🇷 Brasileirão Série A</li>
+        <li class="league-item" data-league="libertadores">🏆 Copa Libertadores</li>
+        <li class="league-item" data-league="champions">⭐ Champions League</li>
+        <li class="league-item" data-league="premier">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</li>
+        <li class="league-item" data-league="laliga">🇪🇸 La Liga</li>
+        <li class="league-item" data-league="seriea">🇮🇹 Serie A</li>
+        <li class="league-item" data-league="bundesliga">🇩🇪 Bundesliga</li>
+        <li class="league-item" data-league="copabrasil">🇧🇷 Copa do Brasil</li>
+      </ul>
+    </div>
+    <div class="sidebar-hud">
+      <div class="hud-line"></div>
+      <div class="hud-stat"><span>Ao Vivo</span><strong class="neon-blue" id="liveCountSidebar">6</strong></div>
+      <div class="hud-stat"><span>Mercados</span><strong class="neon-purple">12.4K</strong></div>
+      <div class="hud-line"></div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content" id="mainContent">
+
+    <!-- ── VIEW: HOME ── -->
+    <div id="view-home" class="view active-view">
+      <section class="hero">
+        <div class="hero-bg">
+          <div class="hero-arena"></div><div class="hero-fog"></div>
+          <div class="hero-vignette"></div><div class="hero-grid"></div>
+        </div>
+        <div class="hero-panel hero-panel-left glass-card">
+          <div class="panel-tag"><span class="live-pulse"></span>AO VIVO</div>
+          <div class="panel-match">Flamengo <span class="vs">VS</span> Palmeiras</div>
+          <div class="panel-odds">
+            <div class="panel-odd"><span>1</span><strong class="neon-blue live-odd" data-base="1.45">1.45</strong></div>
+            <div class="panel-odd"><span>X</span><strong class="neon-purple live-odd" data-base="3.80">3.80</strong></div>
+            <div class="panel-odd"><span>2</span><strong class="neon-green live-odd" data-base="6.20">6.20</strong></div>
+          </div>
+          <div class="panel-score">⚽ 2 — 1 <span class="live-time-badge" id="heroTime">67'</span></div>
+        </div>
+        <div class="hero-panel hero-panel-right glass-card">
+          <div class="panel-tag">🔥 POPULARES</div>
+          <div class="popular-line">Real Madrid<span class="odd-chip neon-blue">1.95</span></div>
+          <div class="popular-line">Ambos Marcam<span class="odd-chip neon-purple">1.72</span></div>
+          <div class="popular-line">+2.5 Gols<span class="odd-chip neon-green">1.90</span></div>
+          <div class="popular-line">Barcelona Win<span class="odd-chip neon-blue">1.80</span></div>
+        </div>
+        <div class="hero-content">
+          <div class="hero-badge"><span class="badge-dot"></span>PLATAFORMA DE APOSTAS #1 DO BRASIL</div>
+          <h1 class="hero-title">ENTRE NA<br><span class="hero-title-glow">ARENA</span><span class="hero-title-accent"> DO FUTURO</span></h1>
+          <p class="hero-subtitle">Odds em tempo real · IA preditiva · Experiência cinematográfica</p>
+          <div class="hero-actions">
+            <button class="btn-hero" id="heroCta"><span class="btn-hero-glow"></span><span class="btn-hero-text">⚡ APOSTE AGORA</span></button>
+            <button class="btn-hero-secondary" id="heroLive"><span class="rec-dot"></span>VER AO VIVO</button>
+          </div>
+          <div class="hero-stats">
+            <div class="hero-stat"><strong class="neon-blue">2.4M+</strong><span>Apostadores</span></div>
+            <div class="hero-stat-divider"></div>
+            <div class="hero-stat"><strong class="neon-purple">50K+</strong><span>Eventos/mês</span></div>
+            <div class="hero-stat-divider"></div>
+            <div class="hero-stat"><strong class="neon-green">R$ 5B+</strong><span>Pagos em prêmios</span></div>
+          </div>
+        </div>
+        <div class="scroll-hint"><div class="scroll-line"></div><span>EXPLORAR</span></div>
+      </section>
+
+      <section class="section-block">
+        <div class="section-header">
+          <div class="section-title-wrap"><span class="section-dot red-dot"></span><span class="section-title">AO VIVO AGORA</span><span class="live-count-badge" id="liveCountBadge">6</span></div>
+          <a href="#" class="see-all" data-view="live">VER TODOS →</a>
+        </div>
+        <div class="live-cards" id="liveCards"></div>
+      </section>
+
+      <section class="section-block">
+        <div class="section-header">
+          <div class="section-title-wrap"><span class="section-dot blue-dot"></span><span class="section-title">PRÓXIMOS JOGOS</span></div>
+          <div class="filter-tabs" id="filterTabs">
+            <button class="filter-tab active" data-filter="all">TODOS</button>
+            <button class="filter-tab" data-filter="hoje">HOJE</button>
+            <button class="filter-tab" data-filter="amanha">AMANHÃ</button>
+            <button class="filter-tab" data-filter="semana">SEMANA</button>
+          </div>
+        </div>
+        <div class="match-table" id="matchTable"></div>
+      </section>
+
+      <section class="section-block">
+        <div class="section-header">
+          <div class="section-title-wrap"><span class="section-dot purple-dot"></span><span class="section-title">APOSTAS POPULARES</span></div>
+        </div>
+        <div class="popular-grid" id="popularGrid"></div>
+      </section>
+    </div>
+
+    <!-- ── VIEW: AO VIVO ── -->
+    <div id="view-live" class="view">
+      <div class="view-header-bar">
+        <span class="section-dot red-dot"></span>
+        <span class="view-title">AO VIVO</span>
+        <span class="live-count-badge" id="liveCountLive">6</span>
+        <div class="live-sport-tabs" id="liveSportTabs">
+          <button class="lsp-tab active" data-sport="all">Todos</button>
+          <button class="lsp-tab" data-sport="futebol">⚽ Futebol</button>
+          <button class="lsp-tab" data-sport="basquete">🏀 Basquete</button>
+          <button class="lsp-tab" data-sport="tenis">🎾 Tênis</button>
+          <button class="lsp-tab" data-sport="esports">🎮 E-Sports</button>
+        </div>
+      </div>
+      <div class="live-layout">
+        <div class="live-events-list" id="liveEventsList"></div>
+        <div class="live-match-detail" id="liveMatchDetail">
+          <div class="pick-match-hint"><div class="hint-icon">⚡</div><p>Selecione um evento ao vivo para ver todos os mercados</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VIEW: MINHAS APOSTAS ── -->
+    <div id="view-mybets" class="view">
+      <div class="view-header-bar">
+        <span class="section-dot blue-dot"></span>
+        <span class="view-title">MINHAS APOSTAS</span>
+      </div>
+      <!-- Stats cards -->
+      <div class="mybets-stats" id="mybetsStats"></div>
+      <!-- Filters -->
+      <div class="mybets-filters">
+        <button class="filter-tab active" data-betfilter="all">TODAS</button>
+        <button class="filter-tab" data-betfilter="pending">EM ABERTO</button>
+        <button class="filter-tab" data-betfilter="won">GANHAS</button>
+        <button class="filter-tab" data-betfilter="lost">PERDIDAS</button>
+        <button class="filter-tab" data-betfilter="cashout">CASH-OUT</button>
+      </div>
+      <div class="mybets-list" id="mybetsList"></div>
+    </div>
+
+    <!-- ── VIEW: VIP ── -->
+    <div id="view-vip" class="view">
+      <div class="view-header-bar">
+        <span class="section-dot" style="background:var(--neon-gold);box-shadow:0 0 8px var(--neon-gold)"></span>
+        <span class="view-title neon-gold">CLUBE VIP</span>
+      </div>
+      <div class="vip-content" id="vipContent"></div>
+    </div>
+
+    <!-- ── VIEW: AFILIADOS ── -->
+    <div id="view-afiliados" class="view">
+      <div class="view-header-bar">
+        <span class="section-dot" style="background:var(--neon-green);box-shadow:0 0 8px var(--neon-green)"></span>
+        <span class="view-title neon-green">PROGRAMA DE AFILIADOS</span>
+      </div>
+      <div class="afiliados-content" id="afiliadosContent"></div>
+    </div>
+
+    <!-- ── VIEW: PERFIL ── -->
+    <div id="view-perfil" class="view">
+      <div class="view-header-bar">
+        <span class="section-dot blue-dot"></span>
+        <span class="view-title">MEU PERFIL</span>
+      </div>
+      <div class="perfil-content" id="perfilContent"></div>
+    </div>
+
+    <!-- ── VIEW: CASINO ── -->
+    <div id="view-casino" class="view">
+      <div class="view-header-bar">
+        <span class="section-dot" style="background:var(--neon-gold);box-shadow:0 0 8px var(--neon-gold)"></span>
+        <span class="view-title neon-gold">CASINO AO VIVO</span>
+      </div>
+      <div class="casino-grid" id="casinoGrid"></div>
+    </div>
+
+    <!-- ── VIEW: PROMOÇÕES ── -->
+    <div id="view-promo" class="view">
+      <div class="view-header-bar">
+        <span class="section-dot" style="background:var(--neon-green);box-shadow:0 0 8px var(--neon-green)"></span>
+        <span class="view-title neon-green">PROMOÇÕES</span>
+      </div>
+      <div class="promo-grid" id="promoGrid"></div>
+    </div>
+
+    <!-- ── VIEW: VIRTUAL ── -->
+    <div id="view-virtual" class="view">
+      <div class="view-header-bar">
+        <span class="section-dot blue-dot"></span>
+        <span class="view-title">ESPORTES VIRTUAIS</span>
+      </div>
+      <div class="virtual-grid" id="virtualGrid"></div>
+    </div>
+
+    <!-- ── VIEW: ESPORTS ── -->
+    <div id="view-esports" class="view">
+      <div class="view-header-bar">
+        <span class="section-dot purple-dot"></span>
+        <span class="view-title neon-purple">E-SPORTS</span>
+      </div>
+      <div class="live-cards" id="esportsCards"></div>
+    </div>
+
+  </main>
+
+  <!-- RIGHT SIDEBAR – BET SLIP -->
+  <aside class="sidebar-right" id="sidebarRight">
+    <div class="betslip-header">
+      <span class="betslip-title">◈ CUPOM</span>
+      <div class="betslip-header-right">
+        <span class="bet-count-badge" id="betCountBadge" style="display:none;">0</span>
+        <button class="betslip-clear" id="clearBets">LIMPAR</button>
+      </div>
+    </div>
+    <div class="betslip-tabs">
+      <button class="bstab active" data-tab="simples">SIMPLES</button>
+      <button class="bstab" data-tab="multipla">MÚLTIPLA</button>
+      <button class="bstab" data-tab="sistema">SISTEMA</button>
+    </div>
+    <div class="betslip-body" id="betslipBody">
+      <div class="betslip-empty" id="betslipEmpty">
+        <div class="empty-hud">◈</div>
+        <p>Selecione uma odd para<br>adicionar ao cupom</p>
+      </div>
+      <div id="betslipItems"></div>
+    </div>
+    <div class="betslip-footer" id="betslipFooter" style="display:none;">
+      <div class="stake-presets">
+        <button class="stake-preset" data-val="10">R$10</button>
+        <button class="stake-preset" data-val="25">R$25</button>
+        <button class="stake-preset" data-val="50">R$50</button>
+        <button class="stake-preset" data-val="100">R$100</button>
+      </div>
+      <div class="stake-row">
+        <label>VALOR (R$)</label>
+        <input type="number" class="stake-input" id="stakeInput" placeholder="0,00" min="1"/>
+      </div>
+      <div class="potential-win">
+        <span>GANHO POTENCIAL</span>
+        <span class="win-value neon-green" id="winValue">R$ 0,00</span>
+      </div>
+      <div class="payout-info" id="payoutInfo"></div>
+      <button class="btn-place-bet" id="placeBetBtn">
+        <span class="btn-glow-fx"></span>⚡ FAZER APOSTA
+      </button>
+    </div>
+  </aside>
+</div>
+
+<!-- ══════════ MODALS ══════════ -->
+
+<!-- LOGIN -->
+<div class="modal-overlay" id="loginModal">
+  <div class="modal glass-modal">
+    <button class="modal-close" data-modal="loginModal">✕</button>
+    <div class="modal-logo">ARENA<span>BET</span></div>
+    <h2 class="modal-title">ACESSO AO SISTEMA</h2>
+    <div class="modal-error" id="loginError"></div>
+    <form id="loginForm">
+      <div class="form-group"><label>E-MAIL</label><input type="email" id="loginEmail" placeholder="seu@email.com" required/></div>
+      <div class="form-group"><label>SENHA</label><input type="password" id="loginPassword" placeholder="••••••••" required/></div>
+      <div class="form-row">
+        <label class="checkbox-label"><input type="checkbox"/> Lembrar acesso</label>
+        <a href="#" class="form-link">Esqueci a senha</a>
+      </div>
+      <button type="submit" class="btn-submit" id="loginSubmit">ENTRAR NO SISTEMA</button>
+      <p class="modal-switch">Sem conta? <a href="#" id="switchToRegister">Registre-se agora</a></p>
+    </form>
+  </div>
+</div>
+
+<!-- REGISTRO -->
+<div class="modal-overlay" id="registerModal">
+  <div class="modal glass-modal">
+    <button class="modal-close" data-modal="registerModal">✕</button>
+    <div class="modal-logo">ARENA<span>BET</span></div>
+    <h2 class="modal-title">CRIAR CONTA</h2>
+    <div class="modal-error" id="registerError"></div>
+    <form id="registerForm">
+      <div class="form-row-2">
+        <div class="form-group"><label>NOME</label><input type="text" id="regName" placeholder="João" required/></div>
+        <div class="form-group"><label>SOBRENOME</label><input type="text" id="regLastName" placeholder="Silva" required/></div>
+      </div>
+      <div class="form-group"><label>E-MAIL</label><input type="email" id="regEmail" placeholder="seu@email.com" required/></div>
+      <div class="form-group"><label>CPF</label><input type="text" id="regCpf" placeholder="000.000.000-00" maxlength="14" required/></div>
+      <div class="form-row-2">
+        <div class="form-group"><label>SENHA</label><input type="password" id="regPassword" placeholder="••••••••" required/></div>
+        <div class="form-group"><label>CONFIRMAR</label><input type="password" id="regConfirm" placeholder="••••••••" required/></div>
+      </div>
+      <div class="form-group"><label>DATA DE NASCIMENTO</label><input type="date" id="regBirth" required/></div>
+      <label class="checkbox-label" style="margin-bottom:10px;"><input type="checkbox" required/> Aceito os Termos e Condições</label>
+      <label class="checkbox-label" style="margin-bottom:18px;"><input type="checkbox" required/> Confirmo ter 18 anos ou mais</label>
+      <button type="submit" class="btn-submit" id="registerSubmit">CRIAR CONTA GRÁTIS</button>
+      <p class="modal-switch">Já tem conta? <a href="#" id="switchToLogin">Entrar</a></p>
+    </form>
+  </div>
+</div>
+
+<!-- DEPÓSITO -->
+<div class="modal-overlay" id="depositModal">
+  <div class="modal glass-modal modal-wide">
+    <button class="modal-close" data-modal="depositModal">✕</button>
+    <div class="modal-logo">ARENA<span>BET</span></div>
+    <h2 class="modal-title">DEPOSITAR</h2>
+    <div class="payment-methods" id="paymentMethods">
+      <button class="pay-method active" data-method="pix"><span class="pay-method-icon">◎</span><div><strong>PIX</strong><small>Instante · 24/7</small></div></button>
+      <button class="pay-method" data-method="card"><span class="pay-method-icon">💳</span><div><strong>Cartão</strong><small>Visa / Master</small></div></button>
+      <button class="pay-method" data-method="boleto"><span class="pay-method-icon">📄</span><div><strong>Boleto</strong><small>1-2 dias</small></div></button>
+      <button class="pay-method" data-method="crypto"><span class="pay-method-icon">₿</span><div><strong>Cripto</strong><small>BTC · ETH</small></div></button>
+      <button class="pay-method" data-method="picpay"><span class="pay-method-icon">📱</span><div><strong>PicPay</strong><small>Instant.</small></div></button>
+      <button class="pay-method" data-method="bank"><span class="pay-method-icon">🏦</span><div><strong>TED/DOC</strong><small>1 dia útil</small></div></button>
+    </div>
+    <!-- PIX -->
+    <div class="pay-panel active" id="panel-pix">
+      <div class="pay-panel-inner">
+        <div class="pay-amounts">
+          <button class="pay-amount-btn active" data-amount="50">R$ 50</button>
+          <button class="pay-amount-btn" data-amount="100">R$ 100</button>
+          <button class="pay-amount-btn" data-amount="200">R$ 200</button>
+          <button class="pay-amount-btn" data-amount="500">R$ 500</button>
+        </div>
+        <div class="pay-or">ou digite o valor</div>
+        <div class="form-group"><label>VALOR (R$)</label><input type="number" id="pixAmount" placeholder="Mín. R$ 10" min="10"/></div>
+        <div class="pay-info-row">
+          <span class="pay-info-item">⚡ <strong>Instantâneo</strong></span>
+          <span class="pay-info-item">💰 Taxa: <strong>Grátis</strong></span>
+          <span class="pay-info-item">📊 Limite: <strong>R$10–R$50k</strong></span>
+        </div>
+        <button class="btn-submit" id="pixConfirmBtn">GERAR QR CODE PIX</button>
+        <div class="pix-qr" id="pixQr" style="display:none;">
+          <div class="qr-code-box"><div class="qr-grid" id="qrGrid"></div></div>
+          <div class="pix-key">
+            <label>CÓDIGO PIX (Copia e Cola)</label>
+            <div class="pix-code-row">
+              <code id="pixCode">00020126580014br.gov.bcb.pix0136arena-bet-pagamentos520400005303986540550.005802BR5925ARENABT PAGAMENTOS LTDA6009SAO PAULO62070503***6304A123</code>
+              <button class="copy-btn" id="copyPix">COPIAR</button>
+            </div>
+          </div>
+          <div class="pix-timer"><span class="timer-icon">⏱</span> Expira em: <strong id="pixTimerVal">14:59</strong></div>
+        </div>
+      </div>
+    </div>
+    <!-- CARD -->
+    <div class="pay-panel" id="panel-card">
+      <div class="pay-panel-inner">
+        <div class="pay-amounts">
+          <button class="pay-amount-btn active" data-amount="100">R$ 100</button>
+          <button class="pay-amount-btn" data-amount="200">R$ 200</button>
+          <button class="pay-amount-btn" data-amount="500">R$ 500</button>
+          <button class="pay-amount-btn" data-amount="1000">R$ 1.000</button>
+        </div>
+        <div class="form-group"><label>NÚMERO DO CARTÃO</label><input type="text" id="cardNumber" placeholder="0000 0000 0000 0000" maxlength="19"/></div>
+        <div class="form-row-2">
+          <div class="form-group"><label>VALIDADE</label><input type="text" id="cardExpiry" placeholder="MM/AA" maxlength="5"/></div>
+          <div class="form-group"><label>CVV</label><input type="text" id="cardCvv" placeholder="123" maxlength="3"/></div>
+        </div>
+        <div class="form-group"><label>NOME NO CARTÃO</label><input type="text" id="cardName" placeholder="JOÃO DA SILVA"/></div>
+        <div class="pay-info-row"><span class="pay-info-item">🔒 <strong>SSL 256-bit</strong></span><span class="pay-info-item">💳 Visa · Master · Elo · Amex</span></div>
+        <button class="btn-submit" id="cardConfirmBtn">PROCESSAR DEPÓSITO</button>
+      </div>
+    </div>
+    <!-- BOLETO -->
+    <div class="pay-panel" id="panel-boleto">
+      <div class="pay-panel-inner">
+        <div class="pay-amounts">
+          <button class="pay-amount-btn active" data-amount="100">R$ 100</button>
+          <button class="pay-amount-btn" data-amount="200">R$ 200</button>
+          <button class="pay-amount-btn" data-amount="500">R$ 500</button>
+        </div>
+        <div class="form-group"><label>VALOR (R$)</label><input type="number" id="boletoAmount" placeholder="Mín. R$ 30" min="30"/></div>
+        <div class="pay-info-row"><span class="pay-info-item">⏰ <strong>1-2 dias úteis</strong></span><span class="pay-info-item">📊 R$30–R$5k</span></div>
+        <button class="btn-submit" id="boletoConfirmBtn">GERAR BOLETO</button>
+      </div>
+    </div>
+    <!-- CRIPTO -->
+    <div class="pay-panel" id="panel-crypto">
+      <div class="pay-panel-inner">
+        <div class="crypto-select">
+          <button class="crypto-btn active" data-crypto="BTC">₿ Bitcoin</button>
+          <button class="crypto-btn" data-crypto="ETH">Ξ Ethereum</button>
+          <button class="crypto-btn" data-crypto="USDT">₮ Tether</button>
+        </div>
+        <div class="form-group"><label>VALOR (R$)</label><input type="number" id="cryptoAmount" placeholder="Mín. R$ 50" min="50"/></div>
+        <div class="pay-info-row"><span class="pay-info-item">⚡ 3 confirmações</span><span class="pay-info-item">🔐 Mainnet</span></div>
+        <button class="btn-submit" id="cryptoConfirmBtn">OBTER ENDEREÇO</button>
+      </div>
+    </div>
+    <!-- PICPAY -->
+    <div class="pay-panel" id="panel-picpay">
+      <div class="pay-panel-inner">
+        <div class="pay-amounts">
+          <button class="pay-amount-btn active" data-amount="50">R$ 50</button>
+          <button class="pay-amount-btn" data-amount="100">R$ 100</button>
+          <button class="pay-amount-btn" data-amount="200">R$ 200</button>
+        </div>
+        <div class="form-group"><label>VALOR (R$)</label><input type="number" id="picpayAmount" placeholder="Mín. R$ 10" min="10"/></div>
+        <button class="btn-submit" id="picpayConfirmBtn">PAGAR COM PICPAY</button>
+      </div>
+    </div>
+    <!-- BANK -->
+    <div class="pay-panel" id="panel-bank">
+      <div class="pay-panel-inner">
+        <div class="form-group"><label>VALOR (R$)</label><input type="number" id="bankAmount" placeholder="Mín. R$ 50" min="50"/></div>
+        <div class="bank-data glass-card" style="padding:16px;margin-top:12px;">
+          <div class="bank-row"><span>Banco</span><strong>341 – Itaú</strong></div>
+          <div class="bank-row"><span>Agência</span><strong>0001</strong></div>
+          <div class="bank-row"><span>Conta</span><strong>12345-6</strong></div>
+          <div class="bank-row"><span>CNPJ</span><strong>00.000.000/0001-00</strong></div>
+          <div class="bank-row"><span>Favorecido</span><strong>ArenaBet Pagamentos Ltda</strong></div>
+        </div>
+        <button class="btn-submit" id="bankConfirmBtn">CONFIRMAR TRANSFERÊNCIA</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SAQUE -->
+<div class="modal-overlay" id="withdrawModal">
+  <div class="modal glass-modal">
+    <button class="modal-close" data-modal="withdrawModal">✕</button>
+    <div class="modal-logo">ARENA<span>BET</span></div>
+    <h2 class="modal-title">SACAR FUNDOS</h2>
+    <div class="form-group">
+      <label>MÉTODO</label>
+      <select id="withdrawMethod" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#eaeaea;padding:11px 14px;font-size:14px;outline:none;">
+        <option value="pix">PIX (Instant.)</option>
+        <option value="ted">TED (1 dia útil)</option>
+        <option value="crypto">Cripto (BTC/ETH)</option>
+      </select>
+    </div>
+    <div class="form-group"><label>CHAVE PIX / CONTA</label><input type="text" id="withdrawKey" placeholder="CPF, e-mail, telefone ou chave aleatória"/></div>
+    <div class="form-group"><label>VALOR (R$)</label><input type="number" id="withdrawAmount" placeholder="Mín. R$ 20" min="20"/></div>
+    <div class="pay-info-row" style="margin:12px 0;">
+      <span class="pay-info-item">⏱ PIX: <strong>até 15min</strong></span>
+      <span class="pay-info-item">💰 Taxa: <strong>Grátis</strong></span>
+      <span class="pay-info-item">📊 Saldo: <strong id="withdrawBalance">R$ 0,00</strong></span>
+    </div>
+    <button class="btn-submit" id="withdrawConfirmBtn">SOLICITAR SAQUE</button>
+  </div>
+</div>
+
+<!-- BET CONFIRM -->
+<div class="modal-overlay" id="betModal">
+  <div class="modal glass-modal modal-sm">
+    <button class="modal-close" data-modal="betModal">✕</button>
+    <div class="bet-confirm-icon">⚡</div>
+    <h2 class="modal-title neon-green">APOSTA CONFIRMADA</h2>
+    <p id="betConfirmText" class="bet-confirm-text"></p>
+    <button class="btn-submit" onclick="document.getElementById('betModal').classList.remove('active')">OK</button>
+  </div>
+</div>
+
+<!-- SEARCH -->
+<div class="modal-overlay" id="searchModal">
+  <div class="modal glass-modal" style="max-width:560px;padding:24px;">
+    <div class="search-bar">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" class="search-input" placeholder="Buscar times, ligas, eventos..." autocomplete="off"/>
+      <button class="modal-close" data-modal="searchModal" style="position:static;">✕</button>
+    </div>
+    <div class="search-results" id="searchResults">
+      <div class="search-hint">Digite para buscar jogos, times ou ligas</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- FOOTER -->
+<footer class="site-footer">
+  <div class="footer-glow-line"></div>
+  <div class="footer-top">
+    <div class="footer-brand">
+      <div class="footer-logo">ARENA<span>BET</span></div>
+      <p>A plataforma de apostas do futuro. Jogue com responsabilidade.</p>
+      <div class="age-badge">+18</div>
+      <div class="footer-certs">
+        <span class="cert-badge">🔒 SSL</span>
+        <span class="cert-badge">✓ Licenciado</span>
+        <span class="cert-badge">🛡 KYC/AML</span>
+      </div>
+    </div>
+    <div class="footer-links">
+      <div class="footer-col">
+        <strong>APOSTAS</strong>
+        <a href="#" data-view="home">Esportes</a>
+        <a href="#" data-view="live">Ao Vivo</a>
+        <a href="#" data-view="virtual">Virtual</a>
+        <a href="#" data-view="esports">E-Sports</a>
+        <a href="#" data-view="casino">Casino</a>
+      </div>
+      <div class="footer-col">
+        <strong>MINHA CONTA</strong>
+        <a href="#" data-view="mybets">Minhas Apostas</a>
+        <a href="#" data-view="vip">Clube VIP</a>
+        <a href="#" data-view="perfil">Perfil</a>
+        <a href="#" data-view="afiliados">Afiliados</a>
+      </div>
+      <div class="footer-col">
+        <strong>SUPORTE</strong>
+        <a href="#">Central de Ajuda</a>
+        <a href="#">Chat 24/7</a>
+        <a href="#">WhatsApp</a>
+        <a href="#">Jogo Responsável</a>
+      </div>
+      <div class="footer-col">
+        <strong>PAGAMENTOS</strong>
+        <div class="payment-icons">
+          <span class="pay-badge" onclick="openDeposit()">PIX</span>
+          <span class="pay-badge" onclick="openDeposit()">VISA</span>
+          <span class="pay-badge" onclick="openDeposit()">MASTER</span>
+          <span class="pay-badge" onclick="openDeposit()">BOLETO</span>
+          <span class="pay-badge" onclick="openDeposit()">₿ CRIPTO</span>
+          <span class="pay-badge" onclick="openDeposit()">PICPAY</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 ArenaBet™ · Todos os direitos reservados · Licença AB-2026-001 · +18 · Jogo Responsável</p>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

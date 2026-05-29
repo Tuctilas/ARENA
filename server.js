@@ -780,9 +780,11 @@ app.post('/api/payments/create', auth, async (req, res) => {
 // Webhook da DebitoPay: payment.completed / payment.failed.
 app.post('/api/payments/webhook', (req, res) => {
   if (DEBITOPAY.webhookSecret) {
-    const sig = req.headers['x-debitopay-signature'] || req.headers['x-webhook-signature'] || '';
+    // Header: X-Webhook-Signature: sha256=<hmac hex>
+    const raw = req.headers['x-webhook-signature'] || req.headers['x-debitopay-signature'] || '';
+    const sig = String(raw).replace(/^sha256=/i, '').trim();
     const expected = crypto.createHmac('sha256', DEBITOPAY.webhookSecret).update(req.rawBody || Buffer.from('')).digest('hex');
-    const a = Buffer.from(String(sig)), b = Buffer.from(expected);
+    const a = Buffer.from(sig), b = Buffer.from(expected);
     if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return res.status(401).json({ error: 'Assinatura inválida' });
   }
 

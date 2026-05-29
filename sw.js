@@ -1,6 +1,4 @@
-/* ═══════════════════════════════════════
-   ARENABET – Service Worker (PWA)
-═══════════════════════════════════════ */
+// ArenaBet – Service Worker (PWA)
 const CACHE = 'arenabet-v1';
 const STATIC = ['/', '/index.html', '/style.css', '/script.js', '/manifest.json'];
 

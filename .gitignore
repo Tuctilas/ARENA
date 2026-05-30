@@ -1,12 +1,12 @@
-# Dependências
+Dependências
 node_modules/
 
-# Banco de dados (contém e-mails, CPFs e hashes de senha — NUNCA subir)
+Banco de dados (contém e-mails, CPFs e hashes de senha — NUNCA subir)
 data/
 *.db
 *.sqlite
 
-# Segredos e variáveis de ambiente
+Segredos e variáveis de ambiente
 .env
 .env.*
 !.env.example
@@ -14,16 +14,16 @@ data/
 *.key
 .jwt_secret
 
-# Logs
+Logs
 *.log
 npm-debug.log*
 
-# Sistema operacional
+Sistema operacional
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# Editores
+Editores
 .vscode/
 .idea/
 *.swp
